@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="brokercraft.controllers.LoginController"
+            styleClass="root-pane" prefWidth="1100" prefHeight="680">
+    <left>
+        <VBox styleClass="hero-panel" alignment="TOP_LEFT" spacing="24" prefWidth="480">
+            <padding><Insets top="52" right="44" bottom="52" left="52"/></padding>
+            <Label text="BrokerCraft" styleClass="brand-title"/>
+            <Label text="Institutional-grade brokerage simulation for Ethiopia's capital markets. Trade, analyze, and manage portfolios in real time."
+                   styleClass="brand-tagline" wrapText="true" maxWidth="360"/>
+            <HBox spacing="12">
+                <VBox styleClass="feature-pill" alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="5" styleClass="hero-stat-number"/>
+                    <Label text="Live Stocks" styleClass="hero-stat-label"/>
+                </VBox>
+                <VBox styleClass="feature-pill" alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="3s" styleClass="hero-stat-number"/>
+                    <Label text="Price Ticks" styleClass="hero-stat-label"/>
+                </VBox>
+                <VBox styleClass="feature-pill" alignment="CENTER" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="RMI" styleClass="hero-stat-number"/>
+                    <Label text="Secure Sync" styleClass="hero-stat-label"/>
+                </VBox>
+            </HBox>
+            <VBox spacing="8" styleClass="insight-box">
+                <Label text="Markets covered" style="-fx-text-fill: #c7d2fe; -fx-font-weight: bold;"/>
+                <Label text="ETHIO  |  DASHEN  |  AWASH  |  HIBRET  |  COMBANK"
+                       style="-fx-text-fill: #e2e8f0; -fx-font-family: Consolas; -fx-font-size: 12px;"/>
+            </VBox>
+            <HBox spacing="8">
+                <Label text="Multi-role" styleClass="feature-pill"/>
+                <Label text="MySQL backed" styleClass="feature-pill"/>
+                <Label text="Live charts" styleClass="feature-pill"/>
+            </HBox>
+        </VBox>
+    </left>
+    <center>
+        <VBox alignment="CENTER" styleClass="root-pane">
+            <VBox styleClass="login-card" spacing="18" maxWidth="420" alignment="CENTER_LEFT">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label text="Sign in" styleClass="title"/>
+                    <Pane HBox.hgrow="ALWAYS"/>
+                    <Label text="v1.0" styleClass="subtitle"/>
+                </HBox>
+                <Label text="Access your trading workspace" styleClass="subtitle"/>
+
+                <Label text="USERNAME" styleClass="field-label"/>
+                <TextField fx:id="usernameField" promptText="e.g. admin or your username" maxWidth="Infinity"/>
+
+                <Label text="PASSWORD" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField" promptText="Your password" maxWidth="Infinity"/>
+
+                <Label text="ROLE" styleClass="field-label"/>
+                <ComboBox fx:id="roleCombo" maxWidth="Infinity"/>
+
+                <Label fx:id="errorLabel" styleClass="message-error" wrapText="true" maxWidth="Infinity"/>
+
+                <VBox spacing="10">
+                    <Button text="Sign In to Dashboard" onAction="#onLogin"
+                            styleClass="button-primary" maxWidth="Infinity" defaultButton="true"/>
+                    <Button text="Open Client Registration" onAction="#onRegister"
+                            styleClass="button-ghost" maxWidth="Infinity"/>
+                </VBox>
+
+                <Separator/>
+                <Label text="Demo: admin / admin123 (Admin role)" styleClass="subtitle"/>
+            </VBox>
+        </VBox>
+    </center>
+</BorderPane>

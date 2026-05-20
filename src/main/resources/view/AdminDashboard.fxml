@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="brokercraft.controllers.AdminDashboardController"
+            styleClass="root-pane" prefWidth="1560" prefHeight="940">
+    <top>
+        <VBox spacing="14">
+            <HBox styleClass="header-bar" alignment="CENTER_LEFT" spacing="16">
+                <Label text="BrokerCraft" styleClass="logo-mark"/>
+                <Label text="Admin Command Center" styleClass="subtitle"/>
+                <Separator orientation="VERTICAL"/>
+                <Label fx:id="welcomeLabel" styleClass="section-title"/>
+                <Label fx:id="clockLabel" styleClass="subtitle"/>
+                <Pane HBox.hgrow="ALWAYS"/>
+                <Label fx:id="simStatusLabel" styleClass="badge-live badge-sim-off"/>
+                <Button text="Start Market" onAction="#onStartSim" styleClass="button-accent"/>
+                <Button text="Stop Market" onAction="#onStopSim" styleClass="button-secondary"/>
+                <Button text="Refresh" onAction="#onRefresh" styleClass="button-secondary"/>
+                <Button text="Logout" onAction="#onLogout" styleClass="button-danger"/>
+            </HBox>
+            <HBox spacing="14">
+                <padding><Insets left="20" right="20"/></padding>
+                <VBox styleClass="metric-card-highlight" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="PENDING CLIENTS" styleClass="metric-label"/>
+                    <Label fx:id="pendingCountLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="ACTIVE BROKERS" styleClass="metric-label"/>
+                    <Label fx:id="brokerCountLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="TOTAL TRANSACTIONS" styleClass="metric-label"/>
+                    <Label fx:id="txCountLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="ACTIVE SESSIONS" styleClass="metric-label"/>
+                    <Label fx:id="sessionCountLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="LISTED STOCKS" styleClass="metric-label"/>
+                    <Label fx:id="stockCountLabel" styleClass="metric-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <padding><Insets top="8" right="20" bottom="12" left="20"/></padding>
+            <Tab text="Overview">
+                <HBox spacing="18">
+                    <VBox styleClass="sidebar" spacing="14" prefWidth="300">
+                        <Label text="Create Broker" styleClass="section-title"/>
+                        <VBox styleClass="card-glass" spacing="10">
+                            <TextField fx:id="brokerUsernameField" promptText="Username" maxWidth="Infinity"/>
+                            <PasswordField fx:id="brokerPasswordField" promptText="Password" maxWidth="Infinity"/>
+                            <TextField fx:id="brokerNameField" promptText="Full name" maxWidth="Infinity"/>
+                            <TextField fx:id="brokerDeptField" promptText="Department" maxWidth="Infinity"/>
+                            <Button text="+ Create Broker" onAction="#onCreateBroker"
+                                    styleClass="button-primary" maxWidth="Infinity"/>
+                            <Label fx:id="adminMessageLabel" wrapText="true"/>
+                        </VBox>
+                        <Label text="Online Users" styleClass="field-label"/>
+                        <ListView fx:id="activeUsersList" prefHeight="160" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                    <VBox styleClass="card" spacing="10" HBox.hgrow="ALWAYS">
+                        <Label text="Live Market" styleClass="section-title"/>
+                        <TableView fx:id="marketTable" prefHeight="200">
+                            <columns>
+                                <TableColumn fx:id="stockSymbolCol" text="Symbol" prefWidth="100"/>
+                                <TableColumn fx:id="stockNameCol" text="Company" prefWidth="220"/>
+                                <TableColumn fx:id="stockPriceCol" text="Price" prefWidth="120"/>
+                            </columns>
+                        </TableView>
+                        <Label text="Recent Platform Activity" styleClass="section-title"/>
+                        <TableView fx:id="txTable" VBox.vgrow="ALWAYS" minHeight="280">
+                            <columns>
+                                <TableColumn fx:id="txTimeCol" text="Time" prefWidth="160"/>
+                                <TableColumn fx:id="txClientCol" text="Client" prefWidth="130"/>
+                                <TableColumn fx:id="txTypeCol" text="Side" prefWidth="80"/>
+                                <TableColumn fx:id="txSymbolCol" text="Symbol" prefWidth="90"/>
+                                <TableColumn fx:id="txQtyCol" text="Qty" prefWidth="70"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+                </HBox>
+            </Tab>
+            <Tab text="Approvals">
+                <VBox styleClass="card" spacing="12">
+                    <HBox alignment="CENTER_LEFT" spacing="12">
+                        <Label text="Client Registration Queue" styleClass="section-title"/>
+                        <Pane HBox.hgrow="ALWAYS"/>
+                        <TextField fx:id="pendingSearchField" promptText="Search pending..."
+                                   styleClass="search-field" prefWidth="240"/>
+                    </HBox>
+                    <TableView fx:id="pendingTable" prefHeight="320" minHeight="240">
+                        <columns>
+                            <TableColumn fx:id="pendingNameCol" text="Name" prefWidth="140"/>
+                            <TableColumn fx:id="pendingUserCol" text="Username" prefWidth="120"/>
+                            <TableColumn fx:id="pendingEmailCol" text="Email" prefWidth="200"/>
+                        </columns>
+                    </TableView>
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <Label text="ASSIGN BROKER" styleClass="field-label"/>
+                        <ComboBox fx:id="brokerAssignCombo" prefWidth="200"/>
+                        <Button text="Approve &amp; Assign" onAction="#onApprove" styleClass="button-buy"/>
+                        <Button text="Reject" onAction="#onReject" styleClass="button-sell"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+            <Tab text="Brokers">
+                <VBox styleClass="card" spacing="10">
+                    <Label text="Registered Brokers" styleClass="section-title"/>
+                    <TableView fx:id="brokersTable" VBox.vgrow="ALWAYS" minHeight="400">
+                        <columns>
+                            <TableColumn fx:id="brokerNameCol" text="Name" prefWidth="160"/>
+                            <TableColumn fx:id="brokerUserCol" text="Username" prefWidth="120"/>
+                            <TableColumn fx:id="brokerDeptCol" text="Department" prefWidth="160"/>
+                            <TableColumn fx:id="brokerClientsCol" text="Clients" prefWidth="80"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+    <bottom>
+        <HBox styleClass="status-footer" alignment="CENTER_LEFT">
+            <Label fx:id="footerLabel" styleClass="subtitle" text="Admin console ready"/>
+            <Pane HBox.hgrow="ALWAYS"/>
+        </HBox>
+    </bottom>
+</BorderPane>

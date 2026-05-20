@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="brokercraft.controllers.ClientDashboardController"
+            styleClass="root-pane" prefWidth="1520" prefHeight="920">
+    <top>
+        <VBox spacing="14">
+            <HBox styleClass="header-bar" alignment="CENTER_LEFT" spacing="16">
+                <Label text="BrokerCraft" styleClass="logo-mark"/>
+                <Label text="Investor Terminal" styleClass="subtitle"/>
+                <Separator orientation="VERTICAL"/>
+                <VBox spacing="2">
+                    <Label fx:id="welcomeLabel" styleClass="section-title"/>
+                    <Label fx:id="clockLabel" styleClass="subtitle"/>
+                </VBox>
+                <Pane HBox.hgrow="ALWAYS"/>
+                <Label fx:id="connectionLabel" styleClass="status-dot-online" text="*"/>
+                <Label text="Connected" styleClass="subtitle"/>
+                <Button text="Refresh All" onAction="#onRefresh" styleClass="button-secondary"/>
+                <Button text="Logout" onAction="#onLogout" styleClass="button-danger"/>
+            </HBox>
+            <HBox spacing="14">
+                <padding><Insets left="20" right="20"/></padding>
+                <VBox styleClass="metric-card-highlight" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="PORTFOLIO VALUE" styleClass="metric-label"/>
+                    <Label fx:id="portfolioValueLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="CASH BALANCE" styleClass="metric-label"/>
+                    <Label fx:id="balanceLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="UNREALIZED P/L" styleClass="metric-label"/>
+                    <Label fx:id="pnlLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="HOLDINGS" styleClass="metric-label"/>
+                    <Label fx:id="holdingsCountLabel" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="YOUR BROKER" styleClass="metric-label"/>
+                    <Label fx:id="brokerLabel" styleClass="metric-value"/>
+                </VBox>
+            </HBox>
+            <HBox styleClass="ticker-strip" spacing="24">
+                <padding><Insets left="20" right="20"/></padding>
+                <Label fx:id="tickerLabel" styleClass="ticker-item" wrapText="true" HBox.hgrow="ALWAYS"/>
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <TabPane fx:id="mainTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+            <padding><Insets top="8" right="20" bottom="8" left="20"/></padding>
+            <Tab text="Overview">
+                <HBox spacing="18">
+                    <VBox styleClass="card" spacing="12" prefWidth="380">
+                        <Label text="Portfolio Allocation" styleClass="section-title"/>
+                        <ListView fx:id="allocationList" prefHeight="280" VBox.vgrow="ALWAYS"/>
+                        <VBox styleClass="insight-box" spacing="6">
+                            <Label text="Insight" styleClass="field-label"/>
+                            <Label fx:id="insightLabel" wrapText="true" styleClass="subtitle"/>
+                        </VBox>
+                    </VBox>
+                    <VBox styleClass="card" spacing="10" HBox.hgrow="ALWAYS">
+                        <Label text="Top Movers (Live)" styleClass="section-title"/>
+                        <TableView fx:id="moversTable" VBox.vgrow="ALWAYS" minHeight="320">
+                            <columns>
+                                <TableColumn fx:id="moverSymbolCol" text="Symbol" prefWidth="90"/>
+                                <TableColumn fx:id="moverNameCol" text="Company" prefWidth="200"/>
+                                <TableColumn fx:id="moverPriceCol" text="Price" prefWidth="120"/>
+                                <TableColumn fx:id="moverChangeCol" text="Change %" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+                </HBox>
+            </Tab>
+            <Tab text="Market">
+                <VBox styleClass="card" spacing="12">
+                    <HBox alignment="CENTER_LEFT" spacing="12">
+                        <Label text="Live Market Watch" styleClass="section-title"/>
+                        <Pane HBox.hgrow="ALWAYS"/>
+                        <TextField fx:id="marketSearchField" promptText="Search symbol or company..."
+                                   styleClass="search-field" prefWidth="280"/>
+                        <ComboBox fx:id="marketSortCombo" prefWidth="140"/>
+                    </HBox>
+                    <TableView fx:id="marketTable" VBox.vgrow="ALWAYS" minHeight="400">
+                        <columns>
+                            <TableColumn fx:id="stockSymbolCol" text="Symbol" prefWidth="100"/>
+                            <TableColumn fx:id="stockNameCol" text="Company" prefWidth="240"/>
+                            <TableColumn fx:id="stockPriceCol" text="Last Price" prefWidth="130"/>
+                            <TableColumn fx:id="stockChangeCol" text="Change %" prefWidth="100"/>
+                            <TableColumn fx:id="stockTrendCol" text="Trend" prefWidth="80"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+            <Tab text="Portfolio">
+                <VBox styleClass="card" spacing="12">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Holdings &amp; Performance" styleClass="section-title"/>
+                        <Pane HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="portfolioSummaryLabel" styleClass="subtitle"/>
+                    </HBox>
+                    <TableView fx:id="portfolioTable" VBox.vgrow="ALWAYS" minHeight="400">
+                        <columns>
+                            <TableColumn fx:id="portSymbolCol" text="Symbol" prefWidth="100"/>
+                            <TableColumn fx:id="portQtyCol" text="Shares" prefWidth="90"/>
+                            <TableColumn fx:id="portAvgCol" text="Avg Cost" prefWidth="120"/>
+                            <TableColumn fx:id="portPriceCol" text="Market Price" prefWidth="120"/>
+                            <TableColumn fx:id="portValueCol" text="Market Value" prefWidth="130"/>
+                            <TableColumn fx:id="portPnlCol" text="P/L" prefWidth="110"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+            <Tab text="Trade">
+                <HBox spacing="24" alignment="TOP_CENTER">
+                    <VBox styleClass="trade-panel" spacing="16" prefWidth="400" maxWidth="420">
+                        <Label text="Order Entry" styleClass="section-title"/>
+                        <Label text="Place market orders against live simulated prices" styleClass="subtitle"/>
+                        <Separator/>
+                        <Label text="INSTRUMENT" styleClass="field-label"/>
+                        <ComboBox fx:id="tradeSymbolCombo" maxWidth="Infinity"/>
+                        <Label text="QUANTITY (SHARES)" styleClass="field-label"/>
+                        <TextField fx:id="quantityField" promptText="e.g. 100" maxWidth="Infinity"/>
+                        <VBox styleClass="trade-estimate" spacing="6">
+                            <Label text="ORDER PREVIEW" styleClass="field-label"/>
+                            <Label fx:id="estimateLabel" wrapText="true" styleClass="subtitle"/>
+                        </VBox>
+                        <HBox spacing="12">
+                            <Button text="BUY" onAction="#onBuy" styleClass="button-buy"
+                                    HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                            <Button text="SELL" onAction="#onSell" styleClass="button-sell"
+                                    HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        </HBox>
+                        <Label fx:id="tradeMessageLabel" wrapText="true"/>
+                    </VBox>
+                    <VBox styleClass="card" spacing="10" HBox.hgrow="ALWAYS">
+                        <Label text="Selected Instrument" styleClass="section-title"/>
+                        <Label fx:id="selectedStockLabel" styleClass="metric-value"/>
+                        <TableView fx:id="marketTableMini" prefHeight="320">
+                            <columns>
+                                <TableColumn fx:id="miniSymbolCol" text="Symbol" prefWidth="90"/>
+                                <TableColumn fx:id="miniPriceCol" text="Price" prefWidth="110"/>
+                                <TableColumn fx:id="miniChangeCol" text="Change" prefWidth="90"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+                </HBox>
+            </Tab>
+            <Tab text="History">
+                <VBox styleClass="card" spacing="12">
+                    <HBox alignment="CENTER_LEFT" spacing="12">
+                        <Label text="Transaction Ledger" styleClass="section-title"/>
+                        <Pane HBox.hgrow="ALWAYS"/>
+                        <ComboBox fx:id="txFilterCombo" prefWidth="140"/>
+                        <TextField fx:id="txSearchField" promptText="Filter by symbol..."
+                                   styleClass="search-field" prefWidth="200"/>
+                    </HBox>
+                    <TableView fx:id="historyTable" VBox.vgrow="ALWAYS" minHeight="400">
+                        <columns>
+                            <TableColumn fx:id="txTimeCol" text="Timestamp" prefWidth="170"/>
+                            <TableColumn fx:id="txTypeCol" text="Side" prefWidth="80"/>
+                            <TableColumn fx:id="txSymbolCol" text="Symbol" prefWidth="90"/>
+                            <TableColumn fx:id="txQtyCol" text="Qty" prefWidth="70"/>
+                            <TableColumn fx:id="txPriceCol" text="Price" prefWidth="110"/>
+                            <TableColumn fx:id="txTotalCol" text="Total" prefWidth="120"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+    <bottom>
+        <HBox styleClass="status-footer" alignment="CENTER_LEFT" spacing="20">
+            <Label fx:id="footerStatusLabel" styleClass="subtitle" text="Ready"/>
+            <Pane HBox.hgrow="ALWAYS"/>
+            <Label text="BrokerCraft Terminal" styleClass="subtitle"/>
+        </HBox>
+    </bottom>
+</BorderPane>
