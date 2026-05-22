@@ -215,3 +215,35 @@
     -fx-font-size: 11px;
     -fx-text-fill: rgba(255, 255, 255, 0.7);
 }
+
+/* ── Dark TextArea — matches the dark input field style ── */
+.dark-textarea {
+    -fx-background-color: #0b1220;
+    -fx-text-fill: #f1f5f9;
+    -fx-prompt-text-fill: #64748b;
+    -fx-border-color: #334155;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-border-width: 1.5;
+    -fx-padding: 10 14;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.dark-textarea:focused {
+    -fx-border-color: #6366f1;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.35), 12, 0.3, 0, 0);
+}
+
+/* Fix the inner scroll pane that JavaFX wraps TextArea with */
+.dark-textarea .scroll-pane {
+    -fx-background-color: #0b1220;
+}
+
+.dark-textarea .scroll-pane .viewport {
+    -fx-background-color: #0b1220;
+}
+
+.dark-textarea .content {
+    -fx-background-color: #0b1220;
+}

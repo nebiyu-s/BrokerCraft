@@ -62,9 +62,7 @@
                     <Label text="DESCRIPTION" styleClass="field-label"/>
                     <TextArea fx:id="descriptionArea" promptText="Brief description of your company..."
                               prefRowCount="3" maxWidth="Infinity" wrapText="true"
-                              style="-fx-background-color:#0b1220;-fx-text-fill:#f1f5f9;
-                                     -fx-border-color:#334155;-fx-border-radius:10;
-                                     -fx-background-radius:10;-fx-padding:10 14;"/>
+                              styleClass="dark-textarea"/>
 
                     <Label text="PASSWORD" styleClass="field-label"/>
                     <PasswordField fx:id="passwordField" promptText="Choose a password" maxWidth="Infinity"/>
