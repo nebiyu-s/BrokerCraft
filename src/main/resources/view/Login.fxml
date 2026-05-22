@@ -94,6 +94,8 @@
                             styleClass="button-primary" maxWidth="Infinity" defaultButton="true"/>
                     <Button text="New Client? Register Here" onAction="#onRegister"
                             styleClass="button-ghost" maxWidth="Infinity"/>
+                    <Button text="Register a Company" onAction="#onCompanyRegister"
+                            styleClass="button-ghost" maxWidth="Infinity"/>
 
                     <Separator/>
 

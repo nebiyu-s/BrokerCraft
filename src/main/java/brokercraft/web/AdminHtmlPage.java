@@ -250,7 +250,9 @@ public final class AdminHtmlPage {
   <!-- Tabs -->
   <div class="tabs">
     <div class="tab active" onclick="switchTab('overview')">Overview</div>
-    <div class="tab" onclick="switchTab('approvals')">Approvals</div>
+    <div class="tab" onclick="switchTab('approvals')">Client Approvals</div>
+    <div class="tab" onclick="switchTab('companies')">Companies</div>
+    <div class="tab" onclick="switchTab('ipos')">IPO Approvals</div>
     <div class="tab" onclick="switchTab('brokers')">Brokers</div>
     <div class="tab" onclick="switchTab('transactions')">Transactions</div>
   </div>
@@ -329,6 +331,35 @@ public final class AdminHtmlPage {
       </div>
     </div>
 
+    <!-- Companies -->
+    <div id="tab-companies" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Pending Company Registrations</div>
+        <table>
+          <thead><tr><th>Company Name</th><th>Username</th><th>Email</th><th>Industry</th><th>Description</th><th>Action</th></tr></thead>
+          <tbody id="companiesBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- IPO Approvals -->
+    <div id="tab-ipos" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Pending IPO Listings</div>
+        <table>
+          <thead><tr><th>Company</th><th>Symbol</th><th>Shares</th><th>Price (ETB)</th><th>Deadline</th><th>Description</th><th>Action</th></tr></thead>
+          <tbody id="iposBody"><tr><td colspan="7">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">All IPO Listings</div>
+        <table>
+          <thead><tr><th>Company</th><th>Symbol</th><th>Offered</th><th>Remaining</th><th>Price</th><th>Deadline</th><th>Status</th></tr></thead>
+          <tbody id="allIposBody"><tr><td colspan="7">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
   </div><!-- /content -->
 
   <!-- Footer -->
@@ -402,7 +433,7 @@ function startDashboard() {
 // ════════════════════════════════════════
 function switchTab(name) {
   currentTab = name;
-  const names = ['overview','approvals','brokers','transactions'];
+  const names = ['overview','approvals','companies','ipos','brokers','transactions'];
   document.querySelectorAll('.tab').forEach((t, i) =>
     t.classList.toggle('active', names[i] === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -413,6 +444,8 @@ function switchTab(name) {
 function loadTab(name) {
   if (name === 'overview')     loadStocks();
   if (name === 'approvals')    loadPending();
+  if (name === 'companies')    loadCompanies();
+  if (name === 'ipos')         loadIpos();
   if (name === 'brokers')      loadBrokers();
   if (name === 'transactions') loadTransactions();
 }
@@ -598,6 +631,107 @@ async function loadTransactions() {
 async function startSim() { await post('/api/simulation/start', {}); loadStats(); }
 async function stopSim()  { await post('/api/simulation/stop',  {}); loadStats(); }
 
+// ════════════════════════════════════════
+// COMPANIES
+// ════════════════════════════════════════
+async function loadCompanies() {
+  const list = await get('/api/companies/pending');
+  const tbody = document.getElementById('companiesBody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#64748b;">No pending company registrations.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><strong>${c.fullName}</strong></td>
+      <td>${c.username}</td>
+      <td>${c.email}</td>
+      <td><span style="color:#a78bfa;">${c.industry}</span></td>
+      <td style="color:#94a3b8;font-size:12px;">${c.description || '—'}</td>
+      <td>
+        <button class="btn btn-blue" style="padding:5px 12px;font-size:12px;"
+          onclick="approveCompany(${c.userId})">Approve</button>
+        <button class="btn btn-red" style="padding:5px 12px;font-size:12px;margin-left:6px;"
+          onclick="rejectCompany(${c.userId})">Reject</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function approveCompany(companyId) {
+  if (!confirm('Approve this company?')) return;
+  const res = await post('/api/companies/approve', { companyId });
+  alert(res.message || res.error);
+  loadCompanies(); loadStats();
+}
+
+async function rejectCompany(companyId) {
+  if (!confirm('Reject this company registration?')) return;
+  const res = await post('/api/companies/reject', { companyId });
+  alert(res.message || res.error);
+  loadCompanies();
+}
+
+// ════════════════════════════════════════
+// IPOs
+// ════════════════════════════════════════
+async function loadIpos() {
+  // Pending IPOs (need approval)
+  const pending = await get('/api/ipos/pending');
+  const pendingTbody = document.getElementById('iposBody');
+  if (!pending.length) {
+    pendingTbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No pending IPOs.</td></tr>';
+  } else {
+    pendingTbody.innerHTML = pending.map(i => `
+      <tr>
+        <td><strong>${i.companyName}</strong></td>
+        <td style="color:#93c5fd;font-weight:700;">${i.symbol}</td>
+        <td>${i.sharesOffered.toLocaleString()}</td>
+        <td>${i.pricePerShare.toFixed(2)} ETB</td>
+        <td>${i.deadline}</td>
+        <td style="color:#94a3b8;font-size:12px;">${i.description || '—'}</td>
+        <td>
+          <button class="btn btn-green" style="padding:5px 12px;font-size:12px;"
+            onclick="approveIpo(${i.id})">Approve</button>
+          <button class="btn btn-red" style="padding:5px 12px;font-size:12px;margin-left:6px;"
+            onclick="rejectIpo(${i.id})">Reject</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  // All IPOs overview
+  const all = await get('/api/ipos/all');
+  const allTbody = document.getElementById('allIposBody');
+  if (!all.length) {
+    allTbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No IPOs yet.</td></tr>';
+  } else {
+    allTbody.innerHTML = all.map(i => {
+      const statusColor = {OPEN:'#4ade80',PENDING:'#fbbf24',CLOSED:'#94a3b8',REJECTED:'#f87171'}[i.status] || '#f1f5f9';
+      return `<tr>
+        <td>${i.companyName}</td>
+        <td><strong>${i.symbol}</strong></td>
+        <td>${i.sharesOffered.toLocaleString()}</td>
+        <td>${i.sharesRemaining.toLocaleString()}</td>
+        <td>${i.pricePerShare.toFixed(2)} ETB</td>
+        <td>${i.deadline}</td>
+        <td><span style="color:${statusColor};font-weight:700;">${i.status}</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+async function approveIpo(ipoId) {
+  if (!confirm('Approve this IPO? The stock will go live on the market immediately.')) return;
+  const res = await post('/api/ipos/approve', { ipoId });
+  alert(res.message || res.error);
+  loadIpos(); loadStats();
+}
+
+async function rejectIpo(ipoId) {
+  if (!confirm('Reject this IPO?')) return;
+  const res = await post('/api/ipos/reject', { ipoId });
+  alert(res.message || res.error);
+  loadIpos();
+}
 // ════════════════════════════════════════
 // MESSAGE HELPERS
 // auto-clears success messages after 3s

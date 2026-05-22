@@ -28,6 +28,12 @@ public class AuthService {
                     return null;
                 }
             }
+            if (role == UserRole.COMPANY) {
+                var profile = db.findCompanyProfile(user.getId());
+                if (profile.isEmpty() || profile.get().getStatus() != RegistrationStatus.APPROVED) {
+                    return null;
+                }
+            }
             return user;
         });
     }

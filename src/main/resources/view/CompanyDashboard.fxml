@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="brokercraft.controllers.CompanyDashboardController"
+            styleClass="root-pane" prefWidth="1100" prefHeight="720">
+
+    <!-- ── Top header ── -->
+    <top>
+        <VBox spacing="12">
+            <HBox styleClass="header-bar" alignment="CENTER_LEFT" spacing="16">
+                <Label text="BrokerCraft" styleClass="logo-mark"/>
+                <Label text="Company Portal" styleClass="subtitle"/>
+                <Separator orientation="VERTICAL"/>
+                <Label fx:id="welcomeLabel" styleClass="section-title"/>
+                <Label fx:id="clockLabel"   styleClass="subtitle"/>
+                <Pane HBox.hgrow="ALWAYS"/>
+                <Label fx:id="statusBadge"  styleClass="badge-live"/>
+                <Button text="Refresh"  onAction="#onRefresh"  styleClass="button-secondary"/>
+                <Button text="Logout"   onAction="#onLogout"   styleClass="button-danger"/>
+            </HBox>
+
+            <!-- Metric cards -->
+            <HBox spacing="14">
+                <padding><Insets left="20" right="20"/></padding>
+                <VBox styleClass="metric-card-highlight" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="TOTAL IPOs SUBMITTED" styleClass="metric-label"/>
+                    <Label fx:id="totalIposLabel" text="0" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="OPEN IPOs" styleClass="metric-label"/>
+                    <Label fx:id="openIposLabel" text="0" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="TOTAL SHARES SOLD" styleClass="metric-label"/>
+                    <Label fx:id="sharesSoldLabel" text="0" styleClass="metric-value"/>
+                </VBox>
+                <VBox styleClass="metric-card" spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="CAPITAL RAISED (ETB)" styleClass="metric-label"/>
+                    <Label fx:id="capitalRaisedLabel" text="0.00" styleClass="metric-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- ── Center: tabs ── -->
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <padding><Insets top="8" right="20" bottom="12" left="20"/></padding>
+
+            <!-- My IPOs tab -->
+            <Tab text="My IPOs">
+                <VBox styleClass="card" spacing="12">
+                    <Label text="IPO Listings" styleClass="section-title"/>
+                    <TableView fx:id="ipoTable" VBox.vgrow="ALWAYS" minHeight="400">
+                        <columns>
+                            <TableColumn fx:id="ipoSymbolCol"    text="Symbol"     prefWidth="100"/>
+                            <TableColumn fx:id="ipoOfferedCol"   text="Offered"    prefWidth="100"/>
+                            <TableColumn fx:id="ipoRemainingCol" text="Remaining"  prefWidth="100"/>
+                            <TableColumn fx:id="ipoSoldCol"      text="Sold %"     prefWidth="90"/>
+                            <TableColumn fx:id="ipoPriceCol"     text="IPO Price"  prefWidth="110"/>
+                            <TableColumn fx:id="ipoDeadlineCol"  text="Deadline"   prefWidth="120"/>
+                            <TableColumn fx:id="ipoStatusCol"    text="Status"     prefWidth="110"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <!-- Submit IPO tab -->
+            <Tab text="Submit IPO">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                            style="-fx-background-color:transparent;-fx-background:transparent;">
+                    <VBox styleClass="card" spacing="14" maxWidth="600">
+                        <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+
+                        <Label text="Submit New IPO Listing" styleClass="section-title"/>
+                        <Label text="Once approved by admin, your stock will appear on the live market and clients can buy shares."
+                               styleClass="subtitle" wrapText="true"/>
+
+                        <Label text="STOCK SYMBOL" styleClass="field-label"/>
+                        <TextField fx:id="symbolField" promptText="e.g. MYCO (max 10 chars, letters only)"
+                                   maxWidth="Infinity"/>
+
+                        <Label text="SHARES TO OFFER" styleClass="field-label"/>
+                        <TextField fx:id="sharesField" promptText="e.g. 100000" maxWidth="Infinity"/>
+
+                        <Label text="IPO PRICE PER SHARE (ETB)" styleClass="field-label"/>
+                        <TextField fx:id="priceField" promptText="e.g. 500.00" maxWidth="Infinity"/>
+
+                        <Label text="IPO DEADLINE" styleClass="field-label"/>
+                        <TextField fx:id="deadlineField" promptText="YYYY-MM-DD  e.g. 2026-12-31"
+                                   maxWidth="Infinity"/>
+
+                        <Label text="DESCRIPTION" styleClass="field-label"/>
+                        <TextArea fx:id="ipoDescArea" promptText="What will the raised capital be used for?"
+                                  prefRowCount="3" maxWidth="Infinity" wrapText="true"
+                                  style="-fx-background-color:#0b1220;-fx-text-fill:#f1f5f9;
+                                         -fx-border-color:#334155;-fx-border-radius:10;
+                                         -fx-background-radius:10;-fx-padding:10 14;"/>
+
+                        <Label fx:id="ipoMessageLabel" wrapText="true" maxWidth="Infinity" minHeight="18"/>
+
+                        <Button text="Submit IPO for Admin Approval" onAction="#onSubmitIpo"
+                                styleClass="button-primary" maxWidth="Infinity" defaultButton="true"/>
+
+                    </VBox>
+                </ScrollPane>
+            </Tab>
+
+        </TabPane>
+    </center>
+
+    <!-- ── Footer ── -->
+    <bottom>
+        <HBox styleClass="status-footer" alignment="CENTER_LEFT">
+            <Label fx:id="footerLabel" styleClass="subtitle" text="Company portal ready"/>
+            <Pane HBox.hgrow="ALWAYS"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

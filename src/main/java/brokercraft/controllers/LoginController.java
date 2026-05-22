@@ -16,15 +16,16 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
 public class LoginController {
-    @FXML private TextField usernameField;
-    @FXML private PasswordField passwordField;
+
+    @FXML private TextField        usernameField;
+    @FXML private PasswordField    passwordField;
     @FXML private ComboBox<String> roleCombo;
-    @FXML private Label errorLabel;
+    @FXML private Label            errorLabel;
 
     @FXML
     private void initialize() {
-        // Admin is no longer a JavaFX role — removed from the combo
-        roleCombo.getItems().addAll("Broker", "Client");
+        // Admin is handled via the web dashboard — not in this combo
+        roleCombo.getItems().addAll("Broker", "Client", "Company");
         roleCombo.setValue("Client");
     }
 
@@ -45,16 +46,21 @@ public class LoginController {
             User user = service.login(username, password, role);
 
             if (user == null) {
-                StyleManager.setError(errorLabel, "Invalid credentials or account not yet active.");
+                StyleManager.setError(errorLabel,
+                        "Invalid credentials or account not yet active.");
                 return;
             }
 
             SessionContext.setCurrentUser(user);
 
             switch (role) {
-                case BROKER -> SceneRouter.goTo("BrokerDashboard.fxml", "BrokerCraft — Advisor", 1200, 760);
-                case CLIENT -> SceneRouter.goTo("ClientDashboard.fxml", "BrokerCraft — Investor", 1200, 760);
-                default     -> StyleManager.setError(errorLabel, "Unknown role.");
+                case BROKER  -> SceneRouter.goTo("BrokerDashboard.fxml",
+                        "BrokerCraft — Advisor",  1200, 760);
+                case CLIENT  -> SceneRouter.goTo("ClientDashboard.fxml",
+                        "BrokerCraft — Investor", 1200, 760);
+                case COMPANY -> SceneRouter.goTo("CompanyDashboard.fxml",
+                        "BrokerCraft — Company Portal", 1100, 720);
+                default      -> StyleManager.setError(errorLabel, "Unknown role.");
             }
 
         } catch (Exception e) {
@@ -62,15 +68,19 @@ public class LoginController {
         }
     }
 
+    /** Open client registration screen */
     @FXML
     private void onRegister() throws Exception {
-        SceneRouter.goTo("Register.fxml", "BrokerCraft — Register", 1100, 680);
+        SceneRouter.goTo("Register.fxml", "BrokerCraft — Client Registration", 900, 620);
     }
 
-    /**
-     * Opens the Admin web dashboard in the system default browser.
-     * Called when the user clicks "Admin Dashboard" link on the login screen.
-     */
+    /** Open company registration screen */
+    @FXML
+    private void onCompanyRegister() throws Exception {
+        SceneRouter.goTo("CompanyRegister.fxml", "BrokerCraft — Company Registration", 900, 680);
+    }
+
+    /** Open admin web dashboard in browser */
     @FXML
     private void onOpenAdminDashboard() {
         try {
@@ -78,7 +88,7 @@ public class LoginController {
                 Desktop.getDesktop().browse(new URI("http://localhost:7000/admin"));
             } else {
                 StyleManager.setError(errorLabel,
-                        "Cannot open browser automatically. Go to: http://localhost:7000/admin");
+                        "Cannot open browser. Go to: http://localhost:7000/admin");
             }
         } catch (Exception e) {
             StyleManager.setError(errorLabel, "Could not open browser: " + e.getMessage());
@@ -87,8 +97,9 @@ public class LoginController {
 
     private UserRole parseRole(String label) {
         return switch (label) {
-            case "Broker" -> UserRole.BROKER;
-            default       -> UserRole.CLIENT;
+            case "Broker"  -> UserRole.BROKER;
+            case "Company" -> UserRole.COMPANY;
+            default        -> UserRole.CLIENT;
         };
     }
 }
