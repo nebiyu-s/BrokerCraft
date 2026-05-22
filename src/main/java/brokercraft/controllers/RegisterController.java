@@ -49,18 +49,26 @@ public class RegisterController {
             passwordField.clear();
             confirmField.clear();
 
-            // Show success message
-            StyleManager.setSuccess(messageLabel,
-                    "Application submitted! Wait for admin approval before logging in.");
-
-            // Auto-clear the success message after 4 seconds
-            PauseTransition pause = new PauseTransition(Duration.seconds(4));
-            pause.setOnFinished(e -> messageLabel.setText(""));
-            pause.play();
+            showMsg(messageLabel,
+                    "Application submitted! Wait for admin approval before logging in.", true);
 
         } catch (Exception e) {
-            StyleManager.setError(messageLabel, e.getMessage());
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("nested exception is:")) {
+                int idx = msg.lastIndexOf("nested exception is:");
+                msg = msg.substring(idx + "nested exception is:".length()).trim();
+                if (msg.contains(":")) msg = msg.substring(msg.indexOf(":") + 1).trim();
+            }
+            showMsg(messageLabel, msg != null ? msg : "Registration failed.", false);
         }
+    }
+
+    private void showMsg(Label label, String text, boolean success) {
+        if (success) StyleManager.setSuccess(label, text);
+        else         StyleManager.setError(label, text);
+        PauseTransition pause = new PauseTransition(Duration.seconds(4));
+        pause.setOnFinished(e -> label.setText(""));
+        pause.play();
     }
 
     @FXML

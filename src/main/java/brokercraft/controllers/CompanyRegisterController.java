@@ -45,11 +45,11 @@ public class CompanyRegisterController {
 
         // Validate
         if (companyName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            StyleManager.setError(messageLabel, "Company name, username, email and password are required.");
+            showMsg(messageLabel, "Company name, username, email and password are required.", false);
             return;
         }
         if (!password.equals(confirm)) {
-            StyleManager.setError(messageLabel, "Passwords do not match.");
+            showMsg(messageLabel, "Passwords do not match.", false);
             return;
         }
 
@@ -66,17 +66,38 @@ public class CompanyRegisterController {
             confirmField.clear();
             industryCombo.setValue("Banking");
 
-            StyleManager.setSuccess(messageLabel,
-                    "Application submitted! Admin will review and approve your company.");
-
-            // Auto-clear message after 4 seconds
-            PauseTransition pause = new PauseTransition(Duration.seconds(4));
-            pause.setOnFinished(e -> messageLabel.setText(""));
-            pause.play();
+            showMsg(messageLabel,
+                    "Application submitted! Admin will review and approve your company.", true);
 
         } catch (Exception e) {
-            StyleManager.setError(messageLabel, e.getMessage());
+            // Show a clean error message — strip the RMI wrapper noise
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("nested exception is:")) {
+                // Extract the root cause message
+                int idx = msg.lastIndexOf("nested exception is:");
+                msg = msg.substring(idx + "nested exception is:".length()).trim();
+                // Further clean up if it starts with class name
+                if (msg.contains(":")) {
+                    msg = msg.substring(msg.indexOf(":") + 1).trim();
+                }
+            }
+            showMsg(messageLabel, msg != null ? msg : "Registration failed.", false);
         }
+    }
+
+    /**
+     * Show a message and auto-clear it after 4 seconds.
+     * Both success and error messages clear automatically.
+     */
+    private void showMsg(Label label, String text, boolean success) {
+        if (success) {
+            StyleManager.setSuccess(label, text);
+        } else {
+            StyleManager.setError(label, text);
+        }
+        PauseTransition pause = new PauseTransition(Duration.seconds(4));
+        pause.setOnFinished(e -> label.setText(""));
+        pause.play();
     }
 
     @FXML
