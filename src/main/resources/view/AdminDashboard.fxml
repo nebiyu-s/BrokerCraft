@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="brokercraft.controllers.AdminDashboardController"
-            styleClass="root-pane" prefWidth="1560" prefHeight="940">
+            styleClass="root-pane" prefWidth="1200" prefHeight="760">
     <top>
         <VBox spacing="14">
             <HBox styleClass="header-bar" alignment="CENTER_LEFT" spacing="16">

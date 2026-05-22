@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 group = 'brokercraft'
@@ -14,11 +15,12 @@ repositories {
     mavenCentral()
 }
 
+javafx {
+    version = '21.0.4'
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.base', 'javafx.graphics']
+}
+
 dependencies {
-    implementation "org.openjfx:javafx-controls:21.0.4:win"
-    implementation "org.openjfx:javafx-fxml:21.0.4:win"
-    implementation "org.openjfx:javafx-base:21.0.4:win"
-    implementation "org.openjfx:javafx-graphics:21.0.4:win"
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'com.mysql:mysql-connector-j:8.3.0'
     compileOnly 'org.jetbrains:annotations:24.1.0'
@@ -33,11 +35,13 @@ tasks.register('runServer', JavaExec) {
     description = 'Start BrokerCraft RMI server'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'brokercraft.main.ServerMain'
+    jvmArgs += ['-Djava.rmi.server.hostname=127.0.0.1']
 }
 
 tasks.withType(JavaExec).configureEach {
     jvmArgs += [
         '--add-opens=javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED',
-        '--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED'
+        '--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
+        '-Djava.rmi.server.hostname=127.0.0.1'
     ]
 }
