@@ -1,5 +1,13 @@
 # Build outputs
 out/
+build/
+
+# Gradle cache
+.gradle/
+
+# IntelliJ IDEA
+.idea/
+*.iml
 
 # Local JavaFX SDK and downloaded libs
 .javafx/
@@ -7,7 +15,6 @@ out/
 # IDE metadata
 .metadata/
 .vscode/
-*.iml
 
 # Compiled classes
 *.class
