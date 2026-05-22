@@ -1,5 +1,12 @@
 package brokercraft.rmi;
 
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import brokercraft.database.DatabaseManager;
 import brokercraft.database.Db;
 import brokercraft.model.ClientProfile;
@@ -13,13 +20,6 @@ import brokercraft.service.AuthService;
 import brokercraft.service.TransactionService;
 import brokercraft.simulation.PriceSimulator;
 
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 public class BrokerCraftServiceImpl extends UnicastRemoteObject implements BrokerCraftService {
     private static final long serialVersionUID = 1L;
 
@@ -32,6 +32,11 @@ public class BrokerCraftServiceImpl extends UnicastRemoteObject implements Broke
     public BrokerCraftServiceImpl() throws RemoteException {
         super();
         db.initialize();
+    }
+
+    /** Expose the simulator so AdminWebServer can share the same instance. */
+    public PriceSimulator getPriceSimulator() {
+        return priceSimulator;
     }
 
     private RemoteException remote(Exception e) {

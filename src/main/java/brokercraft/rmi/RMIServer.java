@@ -9,11 +9,16 @@ public final class RMIServer {
 
     private RMIServer() {}
 
-    public static void start() throws Exception {
+    /**
+     * Start the RMI registry and bind the service.
+     * Returns the impl so callers can access shared resources (e.g. PriceSimulator).
+     */
+    public static BrokerCraftServiceImpl start() throws Exception {
         LocateRegistry.createRegistry(REGISTRY_PORT);
         BrokerCraftServiceImpl service = new BrokerCraftServiceImpl();
         Naming.rebind("//localhost:" + REGISTRY_PORT + "/" + SERVICE_NAME, service);
         System.out.println("RMI registry started on port " + REGISTRY_PORT);
         System.out.println("Service bound: " + SERVICE_NAME);
+        return service;
     }
 }

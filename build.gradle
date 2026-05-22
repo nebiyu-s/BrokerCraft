@@ -23,6 +23,10 @@ javafx {
 dependencies {
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'com.mysql:mysql-connector-j:8.3.0'
+    // Javalin: tiny embedded HTTP server for the Admin web dashboard
+    implementation 'io.javalin:javalin:6.3.0'
+    // slf4j-simple: required logger backend for Javalin
+    implementation 'org.slf4j:slf4j-simple:2.0.13'
     compileOnly 'org.jetbrains:annotations:24.1.0'
 }
 
