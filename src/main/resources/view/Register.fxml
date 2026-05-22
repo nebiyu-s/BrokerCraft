@@ -4,43 +4,84 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="brokercraft.controllers.RegisterController"
-            styleClass="root-pane" prefWidth="1100" prefHeight="680">
+<!--
+  Registration screen — two column layout.
+  Left: branding/benefits panel.
+  Right: scrollable form card so nothing is ever hidden off-screen.
+-->
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="brokercraft.controllers.RegisterController"
+            styleClass="root-pane">
+
+    <!-- ── Left hero panel ── -->
     <left>
-        <VBox styleClass="hero-panel" alignment="TOP_LEFT" spacing="20" prefWidth="440">
-            <padding><Insets top="48" right="40" bottom="48" left="48"/></padding>
+        <VBox styleClass="hero-panel" alignment="CENTER_LEFT" spacing="20" prefWidth="400">
+            <padding><Insets top="40" right="40" bottom="40" left="48"/></padding>
+
             <Label text="Become an Investor" styleClass="brand-title"/>
             <Label text="Join BrokerCraft and get a dedicated broker after admin verification."
-                   styleClass="brand-tagline" wrapText="true" maxWidth="340"/>
+                   styleClass="brand-tagline" wrapText="true" maxWidth="300"/>
+
             <VBox spacing="10" styleClass="insight-box">
-                <Label text="What you get" style="-fx-text-fill: #c7d2fe; -fx-font-weight: bold;"/>
-                <Label text="100,000 ETB starting balance" styleClass="feature-pill"/>
-                <Label text="Real-time portfolio &amp; charts" styleClass="feature-pill"/>
-                <Label text="Secure broker-assisted trading" styleClass="feature-pill"/>
+                <Label text="What you get"
+                       style="-fx-text-fill:#c7d2fe;-fx-font-weight:bold;"/>
+                <Label text="✓  100,000 ETB starting balance" styleClass="feature-pill"/>
+                <Label text="✓  Real-time portfolio and charts" styleClass="feature-pill"/>
+                <Label text="✓  Dedicated broker assigned to you" styleClass="feature-pill"/>
+                <Label text="✓  Buy and sell live market stocks" styleClass="feature-pill"/>
             </VBox>
+
+            <HBox spacing="8">
+                <Label text="Free to join"   styleClass="feature-pill"/>
+                <Label text="Admin verified" styleClass="feature-pill"/>
+            </HBox>
         </VBox>
     </left>
+
+    <!-- ── Right: scrollable registration form ── -->
     <center>
-        <VBox alignment="CENTER" styleClass="root-pane">
-            <VBox styleClass="login-card" spacing="14" maxWidth="440" alignment="CENTER_LEFT">
-                <Label text="Application Form" styleClass="title"/>
-                <Label text="Fields marked below are required" styleClass="subtitle"/>
-                <Label text="FULL NAME" styleClass="field-label"/>
-                <TextField fx:id="fullNameField" promptText="Legal name" maxWidth="Infinity"/>
-                <Label text="USERNAME" styleClass="field-label"/>
-                <TextField fx:id="usernameField" promptText="Unique username" maxWidth="Infinity"/>
-                <Label text="EMAIL" styleClass="field-label"/>
-                <TextField fx:id="emailField" promptText="Contact email" maxWidth="Infinity"/>
-                <Label text="PASSWORD" styleClass="field-label"/>
-                <PasswordField fx:id="passwordField" maxWidth="Infinity"/>
-                <Label text="CONFIRM" styleClass="field-label"/>
-                <PasswordField fx:id="confirmField" maxWidth="Infinity"/>
-                <Label fx:id="messageLabel" wrapText="true"/>
-                <HBox spacing="12">
-                    <Button text="Submit Application" onAction="#onSubmit" styleClass="button-primary" HBox.hgrow="ALWAYS"/>
-                    <Button text="Back" onAction="#onBack" styleClass="button-ghost" HBox.hgrow="ALWAYS"/>
-                </HBox>
+        <ScrollPane fitToWidth="true" fitToHeight="false"
+                    hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                    style="-fx-background-color:transparent;-fx-background:transparent;">
+            <VBox alignment="CENTER" spacing="0"
+                  style="-fx-background-color:transparent;" minHeight="600">
+                <padding><Insets top="30" right="40" bottom="30" left="40"/></padding>
+
+                <VBox styleClass="login-card" spacing="12" maxWidth="420" alignment="CENTER_LEFT">
+
+                    <Label text="Client Registration" styleClass="title"/>
+                    <Label text="Fill in all fields to submit your application" styleClass="subtitle"/>
+
+                    <Label text="FULL NAME" styleClass="field-label"/>
+                    <TextField fx:id="fullNameField" promptText="Your legal full name" maxWidth="Infinity"/>
+
+                    <Label text="USERNAME" styleClass="field-label"/>
+                    <TextField fx:id="usernameField" promptText="Choose a unique username" maxWidth="Infinity"/>
+
+                    <Label text="EMAIL" styleClass="field-label"/>
+                    <TextField fx:id="emailField" promptText="Your contact email" maxWidth="Infinity"/>
+
+                    <Label text="PASSWORD" styleClass="field-label"/>
+                    <PasswordField fx:id="passwordField" promptText="Choose a password" maxWidth="Infinity"/>
+
+                    <Label text="CONFIRM PASSWORD" styleClass="field-label"/>
+                    <PasswordField fx:id="confirmField" promptText="Repeat your password" maxWidth="Infinity"/>
+
+                    <!-- Status message (success or error) -->
+                    <Label fx:id="messageLabel" wrapText="true" maxWidth="Infinity" minHeight="18"/>
+
+                    <!-- Buttons -->
+                    <HBox spacing="12">
+                        <Button text="Submit Application" onAction="#onSubmit"
+                                styleClass="button-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                                defaultButton="true"/>
+                        <Button text="Back to Login" onAction="#onBack"
+                                styleClass="button-ghost" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    </HBox>
+
+                </VBox>
             </VBox>
-        </VBox>
+        </ScrollPane>
     </center>
+
 </BorderPane>
