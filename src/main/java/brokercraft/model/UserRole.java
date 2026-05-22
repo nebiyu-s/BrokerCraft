@@ -5,5 +5,6 @@ import java.io.Serializable;
 public enum UserRole implements Serializable {
     ADMIN,
     BROKER,
-    CLIENT
+    CLIENT,
+    COMPANY   // new: represents a listed or pending company
 }

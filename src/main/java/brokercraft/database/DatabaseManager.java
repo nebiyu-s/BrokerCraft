@@ -1,16 +1,5 @@
 package brokercraft.database;
 
-import brokercraft.model.BrokerProfile;
-import brokercraft.model.ClientProfile;
-import brokercraft.model.Portfolio;
-import brokercraft.model.PortfolioItem;
-import brokercraft.model.RegistrationStatus;
-import brokercraft.model.Stock;
-import brokercraft.model.Transaction;
-import brokercraft.model.TransactionType;
-import brokercraft.model.User;
-import brokercraft.model.UserRole;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,6 +10,19 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import brokercraft.model.BrokerProfile;
+import brokercraft.model.ClientProfile;
+import brokercraft.model.CompanyProfile;
+import brokercraft.model.IpoListing;
+import brokercraft.model.Portfolio;
+import brokercraft.model.PortfolioItem;
+import brokercraft.model.RegistrationStatus;
+import brokercraft.model.Stock;
+import brokercraft.model.Transaction;
+import brokercraft.model.TransactionType;
+import brokercraft.model.User;
+import brokercraft.model.UserRole;
 
 public class DatabaseManager {
     private static DatabaseManager instance;
@@ -463,5 +465,189 @@ public class DatabaseManager {
             tx.setTimestamp(LocalDateTime.now());
         }
         return tx;
+    }
+
+    // =========================================================================
+    // COMPANY methods
+    // =========================================================================
+
+    /**
+     * Save or update a company profile.
+     * Uses INSERT ... ON DUPLICATE KEY UPDATE so it works for both create and update.
+     */
+    public CompanyProfile saveCompanyProfile(CompanyProfile profile) throws SQLException {
+        String sql = """
+                INSERT INTO companies (user_id, email, description, industry, status)
+                VALUES (?,?,?,?,?)
+                ON DUPLICATE KEY UPDATE
+                  email=VALUES(email),
+                  description=VALUES(description),
+                  industry=VALUES(industry),
+                  status=VALUES(status)
+                """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, profile.getUserId());
+            ps.setString(2, profile.getEmail());
+            ps.setString(3, profile.getDescription());
+            ps.setString(4, profile.getIndustry());
+            ps.setString(5, profile.getStatus().name());
+            ps.executeUpdate();
+        }
+        return profile;
+    }
+
+    /** Find a company profile by user id */
+    public Optional<CompanyProfile> findCompanyProfile(int userId) throws SQLException {
+        String sql = "SELECT * FROM companies WHERE user_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? Optional.of(mapCompanyProfile(rs)) : Optional.empty();
+            }
+        }
+    }
+
+    /** All companies with PENDING status — for admin approval queue */
+    public List<CompanyProfile> findPendingCompanies() throws SQLException {
+        String sql = "SELECT * FROM companies WHERE status = 'PENDING'";
+        List<CompanyProfile> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapCompanyProfile(rs));
+        }
+        return list;
+    }
+
+    /** All approved companies */
+    public List<CompanyProfile> findApprovedCompanies() throws SQLException {
+        String sql = "SELECT * FROM companies WHERE status = 'APPROVED'";
+        List<CompanyProfile> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapCompanyProfile(rs));
+        }
+        return list;
+    }
+
+    // =========================================================================
+    // IPO methods
+    // =========================================================================
+
+    /**
+     * Save a new IPO listing (INSERT only — IPOs are not updated, only status changes).
+     * Returns the listing with its generated id set.
+     */
+    public IpoListing saveIpoListing(IpoListing ipo) throws SQLException {
+        String sql = """
+                INSERT INTO ipo_listings
+                  (company_id, symbol, company_name, shares_offered, shares_remaining,
+                   price_per_share, description, deadline, status)
+                VALUES (?,?,?,?,?,?,?,?,?)
+                """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, ipo.getCompanyId());
+            ps.setString(2, ipo.getSymbol().toUpperCase());
+            ps.setString(3, ipo.getCompanyName());
+            ps.setInt(4, ipo.getSharesOffered());
+            ps.setInt(5, ipo.getSharesRemaining());
+            ps.setDouble(6, ipo.getPricePerShare());
+            ps.setString(7, ipo.getDescription());
+            ps.setDate(8, java.sql.Date.valueOf(ipo.getDeadline()));
+            ps.setString(9, ipo.getStatus().name());
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) ipo.setId(keys.getInt(1));
+            }
+        }
+        return ipo;
+    }
+
+    /** Update IPO status and shares_remaining (used when admin approves/rejects or shares are sold) */
+    public void updateIpoListing(IpoListing ipo) throws SQLException {
+        String sql = """
+                UPDATE ipo_listings
+                SET status = ?, shares_remaining = ?
+                WHERE id = ?
+                """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, ipo.getStatus().name());
+            ps.setInt(2, ipo.getSharesRemaining());
+            ps.setInt(3, ipo.getId());
+            ps.executeUpdate();
+        }
+    }
+
+    /** All IPOs with PENDING status — for admin approval */
+    public List<IpoListing> findPendingIpos() throws SQLException {
+        return queryIpos("WHERE i.status = 'PENDING'");
+    }
+
+    /** All IPOs with OPEN status — clients can buy these */
+    public List<IpoListing> findOpenIpos() throws SQLException {
+        return queryIpos("WHERE i.status = 'OPEN'");
+    }
+
+    /** All IPOs for a specific company */
+    public List<IpoListing> findIposByCompany(int companyId) throws SQLException {
+        return queryIpos("WHERE i.company_id = " + companyId);
+    }
+
+    /** All IPOs regardless of status — for admin overview */
+    public List<IpoListing> getAllIpos() throws SQLException {
+        return queryIpos("");
+    }
+
+    /** Find a single IPO by its symbol */
+    public Optional<IpoListing> findIpoBySymbol(String symbol) throws SQLException {
+        List<IpoListing> list = queryIpos("WHERE i.symbol = '" + symbol.toUpperCase() + "'");
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+    }
+
+    private List<IpoListing> queryIpos(String whereClause) throws SQLException {
+        String sql = """
+                SELECT i.*, u.full_name AS company_name
+                FROM ipo_listings i
+                INNER JOIN users u ON u.id = i.company_id
+                """ + whereClause + " ORDER BY i.created_at DESC";
+        List<IpoListing> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapIpoListing(rs));
+        }
+        return list;
+    }
+
+    // =========================================================================
+    // Mappers
+    // =========================================================================
+
+    private CompanyProfile mapCompanyProfile(ResultSet rs) throws SQLException {
+        return new CompanyProfile(
+                rs.getInt("user_id"),
+                rs.getString("email"),
+                rs.getString("description"),
+                rs.getString("industry"),
+                RegistrationStatus.valueOf(rs.getString("status")));
+    }
+
+    private IpoListing mapIpoListing(ResultSet rs) throws SQLException {
+        return new IpoListing(
+                rs.getInt("id"),
+                rs.getInt("company_id"),
+                rs.getString("company_name"),
+                rs.getString("symbol"),
+                rs.getInt("shares_offered"),
+                rs.getInt("shares_remaining"),
+                rs.getDouble("price_per_share"),
+                rs.getString("description"),
+                rs.getDate("deadline").toLocalDate(),
+                IpoListing.IpoStatus.valueOf(rs.getString("status")));
     }
 }

@@ -1,15 +1,17 @@
 package brokercraft.rmi;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.util.List;
+
 import brokercraft.model.ClientProfile;
+import brokercraft.model.CompanyProfile;
+import brokercraft.model.IpoListing;
 import brokercraft.model.PortfolioItem;
 import brokercraft.model.Stock;
 import brokercraft.model.Transaction;
 import brokercraft.model.User;
 import brokercraft.model.UserRole;
-
-import java.rmi.Remote;
-import java.rmi.RemoteException;
-import java.util.List;
 
 public interface BrokerCraftService extends Remote {
     User login(String username, String password, UserRole role) throws RemoteException;
@@ -58,4 +60,31 @@ public interface BrokerCraftService extends Remote {
     boolean isPriceSimulationRunning() throws RemoteException;
 
     List<String> getActiveUsernames() throws RemoteException;
+
+    // ── Company registration ──────────────────────────────────────────────────
+    void registerCompany(String username, String password, String fullName,
+                         String email, String description, String industry) throws RemoteException;
+
+    CompanyProfile getCompanyProfile(int companyId) throws RemoteException;
+
+    // ── Admin: company approval ───────────────────────────────────────────────
+    List<CompanyProfile> getPendingCompanies() throws RemoteException;
+    void approveCompany(int companyId) throws RemoteException;
+    void rejectCompany(int companyId)  throws RemoteException;
+
+    // ── IPO lifecycle ─────────────────────────────────────────────────────────
+    IpoListing submitIpo(int companyId, String symbol, int sharesOffered,
+                         double pricePerShare, String description,
+                         String deadline) throws RemoteException;
+
+    List<IpoListing> getPendingIpos()                  throws RemoteException;
+    List<IpoListing> getOpenIpos()                     throws RemoteException;
+    List<IpoListing> getAllIpos()                       throws RemoteException;
+    List<IpoListing> getIposForCompany(int companyId)  throws RemoteException;
+
+    void approveIpo(int ipoId) throws RemoteException;
+    void rejectIpo(int ipoId)  throws RemoteException;
+
+    // ── Client: buy IPO shares ────────────────────────────────────────────────
+    String buyIpoShares(int clientId, String symbol, int quantity) throws RemoteException;
 }

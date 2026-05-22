@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Login screen — two column layout.
+  Left: hero/branding panel.
+  Right: scrollable sign-in card so nothing is ever hidden off-screen.
+-->
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="brokercraft.controllers.LoginController"
+            styleClass="root-pane">
+
+    <!-- ── Left hero panel ── -->
+    <left>
+        <VBox styleClass="hero-panel" alignment="CENTER_LEFT" spacing="20" prefWidth="420">
+            <padding><Insets top="40" right="40" bottom="40" left="48"/></padding>
+
+            <Label text="BrokerCraft" styleClass="brand-title"/>
+            <Label text="Institutional-grade brokerage simulation for Ethiopia's capital markets."
+                   styleClass="brand-tagline" wrapText="true" maxWidth="320"/>
+
+            <!-- Stats row -->
+            <HBox spacing="10">
+                <VBox styleClass="feature-pill" alignment="CENTER" spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="5"  styleClass="hero-stat-number"/>
+                    <Label text="Live Stocks" styleClass="hero-stat-label"/>
+                </VBox>
+                <VBox styleClass="feature-pill" alignment="CENTER" spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="3s" styleClass="hero-stat-number"/>
+                    <Label text="Price Ticks" styleClass="hero-stat-label"/>
+                </VBox>
+                <VBox styleClass="feature-pill" alignment="CENTER" spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="RMI" styleClass="hero-stat-number"/>
+                    <Label text="Secure Sync" styleClass="hero-stat-label"/>
+                </VBox>
+            </HBox>
+
+            <!-- Markets -->
+            <VBox spacing="6" styleClass="insight-box">
+                <Label text="Markets covered"
+                       style="-fx-text-fill:#c7d2fe;-fx-font-weight:bold;"/>
+                <Label text="ETHIO  |  DASHEN  |  AWASH  |  HIBRET  |  COMBANK"
+                       style="-fx-text-fill:#e2e8f0;-fx-font-family:Consolas;-fx-font-size:12px;"/>
+            </VBox>
+
+            <!-- Pills -->
+            <HBox spacing="8">
+                <Label text="Multi-role"    styleClass="feature-pill"/>
+                <Label text="MySQL backed"  styleClass="feature-pill"/>
+                <Label text="Live charts"   styleClass="feature-pill"/>
+            </HBox>
+        </VBox>
+    </left>
+
+    <!-- ── Right: scrollable sign-in card ── -->
+    <center>
+        <!-- ScrollPane so the card is always fully visible regardless of screen height -->
+        <ScrollPane fitToWidth="true" fitToHeight="false"
+                    hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                    style="-fx-background-color:transparent;-fx-background:transparent;">
+            <VBox alignment="CENTER" spacing="0"
+                  style="-fx-background-color:transparent;" minHeight="600">
+                <padding><Insets top="30" right="40" bottom="30" left="40"/></padding>
+
+                <VBox styleClass="login-card" spacing="14" maxWidth="400" alignment="CENTER_LEFT">
+
+                    <!-- Title row -->
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Sign in" styleClass="title"/>
+                        <Pane HBox.hgrow="ALWAYS"/>
+                        <Label text="v1.0" styleClass="subtitle"/>
+                    </HBox>
+                    <Label text="Access your trading workspace" styleClass="subtitle"/>
+
+                    <!-- Fields -->
+                    <Label text="USERNAME" styleClass="field-label"/>
+                    <TextField fx:id="usernameField" promptText="Your username" maxWidth="Infinity"/>
+
+                    <Label text="PASSWORD" styleClass="field-label"/>
+                    <PasswordField fx:id="passwordField" promptText="Your password" maxWidth="Infinity"/>
+
+                    <Label text="ROLE" styleClass="field-label"/>
+                    <ComboBox fx:id="roleCombo" maxWidth="Infinity"/>
+
+                    <!-- Error message -->
+                    <Label fx:id="errorLabel" styleClass="message-error"
+                           wrapText="true" maxWidth="Infinity" minHeight="18"/>
+
+                    <!-- Action buttons -->
+                    <Button text="Sign In to Dashboard" onAction="#onLogin"
+                            styleClass="button-primary" maxWidth="Infinity" defaultButton="true"/>
+                    <Button text="New Client? Register Here" onAction="#onRegister"
+                            styleClass="button-ghost" maxWidth="Infinity"/>
+
+                    <Separator/>
+
+                    <!-- Admin section -->
+                    <Label text="ADMIN ACCESS" styleClass="field-label"/>
+                    <Button text="Open Admin Web Dashboard →" onAction="#onOpenAdminDashboard"
+                            styleClass="button-secondary" maxWidth="Infinity"/>
+                    <Label text="Opens http://localhost:7000/admin in your browser"
+                           styleClass="subtitle" wrapText="true"/>
+
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

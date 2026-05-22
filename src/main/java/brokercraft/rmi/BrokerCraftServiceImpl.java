@@ -10,6 +10,8 @@ import java.util.Set;
 import brokercraft.database.DatabaseManager;
 import brokercraft.database.Db;
 import brokercraft.model.ClientProfile;
+import brokercraft.model.CompanyProfile;
+import brokercraft.model.IpoListing;
 import brokercraft.model.Portfolio;
 import brokercraft.model.PortfolioItem;
 import brokercraft.model.Stock;
@@ -17,6 +19,7 @@ import brokercraft.model.Transaction;
 import brokercraft.model.User;
 import brokercraft.model.UserRole;
 import brokercraft.service.AuthService;
+import brokercraft.service.IpoService;
 import brokercraft.service.TransactionService;
 import brokercraft.simulation.PriceSimulator;
 
@@ -26,6 +29,7 @@ public class BrokerCraftServiceImpl extends UnicastRemoteObject implements Broke
     private final DatabaseManager db = DatabaseManager.getInstance();
     private final AuthService authService = new AuthService();
     private final TransactionService transactionService = new TransactionService();
+    private final IpoService ipoService = new IpoService();
     private final PriceSimulator priceSimulator = new PriceSimulator();
     private final Set<String> activeSessions = new HashSet<>();
 
@@ -234,5 +238,97 @@ public class BrokerCraftServiceImpl extends UnicastRemoteObject implements Broke
     @Override
     public List<String> getActiveUsernames() throws RemoteException {
         return new ArrayList<>(activeSessions);
+    }
+
+    // ── Company ───────────────────────────────────────────────────────────────
+
+    @Override
+    public void registerCompany(String username, String password, String fullName,
+                                String email, String description, String industry)
+            throws RemoteException {
+        try {
+            authService.registerCompany(username, password, fullName, email, description, industry);
+        } catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public CompanyProfile getCompanyProfile(int companyId) throws RemoteException {
+        try {
+            return Db.query(() -> db.findCompanyProfile(companyId).orElse(null));
+        } catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public List<CompanyProfile> getPendingCompanies() throws RemoteException {
+        try {
+            return Db.query(db::findPendingCompanies);
+        } catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void approveCompany(int companyId) throws RemoteException {
+        try { authService.approveCompany(companyId); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void rejectCompany(int companyId) throws RemoteException {
+        try { authService.rejectCompany(companyId); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    // ── IPO ───────────────────────────────────────────────────────────────────
+
+    @Override
+    public IpoListing submitIpo(int companyId, String symbol, int sharesOffered,
+                                double pricePerShare, String description,
+                                String deadline) throws RemoteException {
+        try {
+            java.time.LocalDate date = java.time.LocalDate.parse(deadline);
+            return ipoService.submitIpo(companyId, symbol, sharesOffered,
+                    pricePerShare, description, date);
+        } catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public List<IpoListing> getPendingIpos() throws RemoteException {
+        try { return ipoService.getPendingIpos(); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public List<IpoListing> getOpenIpos() throws RemoteException {
+        try { return ipoService.getOpenIpos(); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public List<IpoListing> getAllIpos() throws RemoteException {
+        try { return ipoService.getAllIpos(); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public List<IpoListing> getIposForCompany(int companyId) throws RemoteException {
+        try { return ipoService.getIposForCompany(companyId); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void approveIpo(int ipoId) throws RemoteException {
+        try { ipoService.approveIpo(ipoId); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void rejectIpo(int ipoId) throws RemoteException {
+        try { ipoService.rejectIpo(ipoId); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public String buyIpoShares(int clientId, String symbol, int quantity) throws RemoteException {
+        try { return ipoService.buyIpoShares(clientId, symbol, quantity); }
+        catch (Exception e) { throw remote(e); }
     }
 }

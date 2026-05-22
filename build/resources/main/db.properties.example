@@ -1,0 +1,4 @@
+# Copy to db.properties and adjust for your XAMPP MySQL
+jdbc.url=jdbc:mysql://localhost:3306/BrokerCraft?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+jdbc.user=root
+jdbc.password=YOUR_PASSWORD_HERE
