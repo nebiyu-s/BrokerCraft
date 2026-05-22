@@ -1,15 +1,12 @@
 package brokercraft.web;
 
 /**
- * AdminHtmlPage — returns the full HTML string for the Admin web dashboard.
+ * AdminHtmlPage — full HTML for the Admin web dashboard.
  *
- * This is a single-page app written in plain HTML + CSS + JavaScript.
- * No external frameworks. Everything is inline so the server serves one file.
- *
- * How it works:
- *   1. Page loads → calls /api/stats to fill the header cards
- *   2. Each tab calls its own API when clicked
- *   3. A timer refreshes stats + current tab every 5 seconds automatically
+ * Changes from v1:
+ *  - Added login screen: page starts on login, dashboard hidden until authenticated
+ *  - Success messages auto-clear after 3 seconds
+ *  - Logout button added to header
  */
 public final class AdminHtmlPage {
 
@@ -22,7 +19,7 @@ public final class AdminHtmlPage {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BrokerCraft — Admin Dashboard</title>
+<title>BrokerCraft — Admin</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -32,30 +29,72 @@ public final class AdminHtmlPage {
     min-height: 100vh;
   }
 
+  /* ════════════════════════════════════════
+     LOGIN SCREEN
+  ════════════════════════════════════════ */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #060a13 0%, #0c1222 50%, #111827 100%);
+  }
+  .login-box {
+    background: rgba(15,23,42,0.95);
+    border: 1px solid rgba(99,102,241,0.35);
+    border-radius: 20px;
+    padding: 40px 44px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 40px rgba(37,99,235,0.2);
+  }
+  .login-logo {
+    font-size: 28px; font-weight: 800; margin-bottom: 4px;
+    background: linear-gradient(to right, #60a5fa, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .login-sub { color: #64748b; font-size: 13px; margin-bottom: 28px; }
+  .login-label { font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .login-input {
+    width: 100%; padding: 12px 14px; background: #0b1220; color: #f1f5f9;
+    border: 1.5px solid #334155; border-radius: 12px; font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .login-input:focus { outline: none; border-color: #6366f1; }
+  .login-btn {
+    width: 100%; padding: 13px; border: none; border-radius: 12px; cursor: pointer;
+    font-size: 14px; font-weight: 700; color: white;
+    background: linear-gradient(to right, #2563eb, #6366f1);
+    margin-top: 4px;
+  }
+  .login-btn:hover { opacity: 0.88; }
+  .login-err { color: #f87171; font-size: 13px; margin-top: 10px; min-height: 20px; }
+
+  /* ════════════════════════════════════════
+     DASHBOARD (hidden until logged in)
+  ════════════════════════════════════════ */
+  #dashboard { display: none; }
+
   /* ── Header ── */
   .header {
     background: linear-gradient(to right, #060a13, #0c1222);
     border-bottom: 1px solid rgba(99,102,241,0.3);
     padding: 14px 28px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    display: flex; align-items: center; gap: 16px;
   }
-  .logo { font-size: 22px; font-weight: 800;
+  .logo {
+    font-size: 22px; font-weight: 800;
     background: linear-gradient(to right, #60a5fa, #a78bfa);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .header-sub { color: #94a3b8; font-size: 13px; }
-  .header-spacer { flex: 1; }
-  .badge {
-    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
-    border: 1px solid;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
+  .header-sub { color: #94a3b8; font-size: 13px; }
+  .header-admin { color: #a78bfa; font-size: 13px; font-weight: 700; }
+  .header-spacer { flex: 1; }
+  .badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid; }
   .badge-on  { background: rgba(34,197,94,0.15);  border-color: rgba(74,222,128,0.5);  color: #4ade80; }
   .badge-off { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.4);  color: #fbbf24; }
-  .btn {
-    padding: 8px 18px; border-radius: 10px; border: none; cursor: pointer;
-    font-size: 13px; font-weight: 700;
-  }
+  .btn { padding: 8px 18px; border-radius: 10px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; }
   .btn-green  { background: linear-gradient(to right,#059669,#10b981); color: white; }
   .btn-yellow { background: linear-gradient(to right,#d97706,#f59e0b); color: white; }
   .btn-red    { background: linear-gradient(to right,#dc2626,#ef4444); color: white; }
@@ -70,27 +109,31 @@ public final class AdminHtmlPage {
     border-bottom: 1px solid rgba(99,102,241,0.15);
   }
   .stat-card {
-    flex: 1; background: linear-gradient(145deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));
+    flex: 1;
+    background: linear-gradient(145deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));
     border: 1px solid rgba(148,163,184,0.12); border-radius: 14px; padding: 14px 18px;
   }
-  .stat-card.highlight { border-color: rgba(96,165,250,0.4);
-    background: linear-gradient(145deg,rgba(37,99,235,0.25),rgba(15,23,42,0.95)); }
+  .stat-card.highlight {
+    border-color: rgba(96,165,250,0.4);
+    background: linear-gradient(145deg,rgba(37,99,235,0.25),rgba(15,23,42,0.95));
+  }
   .stat-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
   .stat-value { font-size: 26px; font-weight: 800; color: #f8fafc; margin-top: 4px; }
 
   /* ── Tabs ── */
-  .tabs { display: flex; gap: 0; padding: 0 28px;
-    border-bottom: 1px solid rgba(99,102,241,0.2); background: transparent; }
+  .tabs {
+    display: flex; padding: 0 28px;
+    border-bottom: 1px solid rgba(99,102,241,0.2);
+  }
   .tab {
     padding: 12px 24px; cursor: pointer; font-size: 13px; font-weight: 700;
     color: #94a3b8; border-bottom: 2px solid transparent; transition: all 0.2s;
   }
   .tab:hover { color: #e2e8f0; }
-  .tab.active { color: #e0e7ff; border-bottom-color: #6366f1;
-    background: rgba(79,70,229,0.15); }
+  .tab.active { color: #e0e7ff; border-bottom-color: #6366f1; background: rgba(79,70,229,0.15); }
 
-  /* ── Content area ── */
-  .content { padding: 24px 28px; }
+  /* ── Content ── */
+  .content { padding: 24px 28px 60px; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
@@ -101,19 +144,25 @@ public final class AdminHtmlPage {
   }
   .card-title { font-size: 15px; font-weight: 700; color: #e2e8f0; margin-bottom: 16px; }
 
-  /* ── Form ── */
+  /* ── Forms ── */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
-  input, select {
+  input[type=text], input[type=password], input:not([type]), select {
     width: 100%; padding: 10px 14px; background: #0b1220; color: #f1f5f9;
     border: 1.5px solid #334155; border-radius: 10px; font-size: 13px;
   }
   input:focus, select:focus { outline: none; border-color: #6366f1; }
   input::placeholder { color: #64748b; }
   .form-actions { margin-top: 14px; display: flex; gap: 10px; align-items: center; }
-  .msg { font-size: 13px; padding: 8px 14px; border-radius: 8px; }
+
+  /* ── Messages — auto-fade via .fade-out class ── */
+  .msg {
+    font-size: 13px; padding: 8px 14px; border-radius: 8px;
+    transition: opacity 0.5s ease;
+  }
   .msg-ok  { background: rgba(34,197,94,0.15);  color: #4ade80; }
   .msg-err { background: rgba(239,68,68,0.15);  color: #f87171; }
+  .msg.fade-out { opacity: 0; }
 
   /* ── Tables ── */
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -122,13 +171,12 @@ public final class AdminHtmlPage {
     padding: 12px 14px; text-align: left; border-bottom: 1px solid #334155;
   }
   td { padding: 11px 14px; border-bottom: 1px solid rgba(51,65,85,0.4); color: #f1f5f9; }
-  tr:nth-child(odd) td { background: #0b1220; }
+  tr:nth-child(odd)  td { background: #0b1220; }
   tr:nth-child(even) td { background: #0f172a; }
   tr:hover td { background: #1e293b; }
-  .badge-buy  { color: #4ade80; font-weight: 700; }
-  .badge-sell { color: #f87171; font-weight: 700; }
-  .badge-pending  { color: #fbbf24; font-weight: 700; }
-  .badge-approved { color: #4ade80; font-weight: 700; }
+  .badge-buy     { color: #4ade80; font-weight: 700; }
+  .badge-sell    { color: #f87171; font-weight: 700; }
+  .badge-pending { color: #fbbf24; font-weight: 700; }
 
   /* ── Footer ── */
   .footer {
@@ -137,170 +185,256 @@ public final class AdminHtmlPage {
     padding: 8px 28px; font-size: 12px; color: #64748b;
     display: flex; justify-content: space-between;
   }
-  #lastUpdated { color: #475569; }
 </style>
 </head>
 <body>
 
-<!-- ── Header ── -->
-<div class="header">
-  <span class="logo">BrokerCraft</span>
-  <span class="header-sub">Admin Command Center</span>
-  <div class="header-spacer"></div>
-  <span id="simBadge" class="badge badge-off">● SIM OFF</span>
-  <button class="btn btn-green"  onclick="startSim()">Start Market</button>
-  <button class="btn btn-yellow" onclick="stopSim()">Stop Market</button>
-</div>
+<!-- ════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">BrokerCraft</div>
+    <div class="login-sub">Admin Dashboard — sign in to continue</div>
 
-<!-- ── Stat cards ── -->
-<div class="stats-row">
-  <div class="stat-card highlight">
-    <div class="stat-label">Pending Clients</div>
-    <div class="stat-value" id="statPending">—</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Active Brokers</div>
-    <div class="stat-value" id="statBrokers">—</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Total Transactions</div>
-    <div class="stat-value" id="statTx">—</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Listed Stocks</div>
-    <div class="stat-value" id="statStocks">—</div>
+    <label class="login-label">Username</label>
+    <input id="loginUsername" class="login-input" type="text"
+           placeholder="admin" onkeydown="if(event.key==='Enter') doLogin()"/>
+
+    <label class="login-label">Password</label>
+    <input id="loginPassword" class="login-input" type="password"
+           placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()"/>
+
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="loginErr"></div>
   </div>
 </div>
 
-<!-- ── Tabs ── -->
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('overview')">Overview</div>
-  <div class="tab" onclick="switchTab('approvals')">Approvals</div>
-  <div class="tab" onclick="switchTab('brokers')">Brokers</div>
-  <div class="tab" onclick="switchTab('transactions')">Transactions</div>
-</div>
+<!-- ════════════════════════════════════════
+     DASHBOARD (shown after login)
+════════════════════════════════════════ -->
+<div id="dashboard">
 
-<!-- ── Tab content ── -->
-<div class="content">
+  <!-- Header -->
+  <div class="header">
+    <span class="logo">BrokerCraft</span>
+    <span class="header-sub">Admin Command Center</span>
+    <span class="header-admin" id="headerAdmin"></span>
+    <div class="header-spacer"></div>
+    <span id="simBadge" class="badge badge-off">● SIM OFF</span>
+    <button class="btn btn-green"  onclick="startSim()">Start Market</button>
+    <button class="btn btn-yellow" onclick="stopSim()">Stop Market</button>
+    <button class="btn btn-gray"   onclick="doLogout()">Logout</button>
+  </div>
 
-  <!-- Overview tab -->
-  <div id="tab-overview" class="tab-panel active">
-    <div class="card">
-      <div class="card-title">Live Market Prices</div>
-      <table>
-        <thead><tr><th>Symbol</th><th>Company</th><th>Price (ETB)</th></tr></thead>
-        <tbody id="stocksBody"><tr><td colspan="3">Loading...</td></tr></tbody>
-      </table>
+  <!-- Stat cards -->
+  <div class="stats-row">
+    <div class="stat-card highlight">
+      <div class="stat-label">Pending Clients</div>
+      <div class="stat-value" id="statPending">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Brokers</div>
+      <div class="stat-value" id="statBrokers">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Transactions</div>
+      <div class="stat-value" id="statTx">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Listed Stocks</div>
+      <div class="stat-value" id="statStocks">—</div>
     </div>
   </div>
 
-  <!-- Approvals tab -->
-  <div id="tab-approvals" class="tab-panel">
-    <div class="card">
-      <div class="card-title">Pending Client Registrations</div>
-      <table>
-        <thead><tr><th>Full Name</th><th>Username</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody id="pendingBody"><tr><td colspan="5">Loading...</td></tr></tbody>
-      </table>
-    </div>
-    <!-- Broker selector used by approve buttons -->
-    <div id="approveForm" style="display:none;" class="card">
-      <div class="card-title">Approve Client</div>
-      <p style="color:#94a3b8;margin-bottom:12px;">
-        Approving: <strong id="approveClientName"></strong>
-      </p>
-      <div class="form-grid">
-        <select id="brokerSelect"><option value="">Select broker...</option></select>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-blue" onclick="confirmApprove()">Approve &amp; Assign</button>
-        <button class="btn btn-gray" onclick="cancelApprove()">Cancel</button>
-        <span id="approveMsg"></span>
-      </div>
-    </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">Overview</div>
+    <div class="tab" onclick="switchTab('approvals')">Approvals</div>
+    <div class="tab" onclick="switchTab('brokers')">Brokers</div>
+    <div class="tab" onclick="switchTab('transactions')">Transactions</div>
   </div>
 
-  <!-- Brokers tab -->
-  <div id="tab-brokers" class="tab-panel">
-    <div class="card">
-      <div class="card-title">Create New Broker Account</div>
-      <div class="form-grid cols3">
-        <input id="bUsername"   placeholder="Username"/>
-        <input id="bPassword"   placeholder="Password" type="password"/>
-        <input id="bFullName"   placeholder="Full Name"/>
-        <input id="bDept"       placeholder="Department" style="grid-column:span 3"/>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-blue" onclick="createBroker()">+ Create Broker</button>
-        <span id="brokerMsg"></span>
+  <!-- Tab content -->
+  <div class="content">
+
+    <!-- Overview -->
+    <div id="tab-overview" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">Live Market Prices</div>
+        <table>
+          <thead><tr><th>Symbol</th><th>Company</th><th>Price (ETB)</th></tr></thead>
+          <tbody id="stocksBody"><tr><td colspan="3">Loading...</td></tr></tbody>
+        </table>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Registered Brokers</div>
-      <table>
-        <thead><tr><th>Full Name</th><th>Username</th><th>Role</th></tr></thead>
-        <tbody id="brokersBody"><tr><td colspan="3">Loading...</td></tr></tbody>
-      </table>
+
+    <!-- Approvals -->
+    <div id="tab-approvals" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Pending Client Registrations</div>
+        <table>
+          <thead><tr><th>Full Name</th><th>Username</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="pendingBody"><tr><td colspan="5">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div id="approveForm" style="display:none;" class="card">
+        <div class="card-title">Approve Client</div>
+        <p style="color:#94a3b8;margin-bottom:12px;">
+          Approving: <strong id="approveClientName"></strong>
+        </p>
+        <div class="form-grid">
+          <select id="brokerSelect"><option value="">Select broker...</option></select>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-blue" onclick="confirmApprove()">Approve &amp; Assign</button>
+          <button class="btn btn-gray" onclick="cancelApprove()">Cancel</button>
+          <span id="approveMsg" class="msg"></span>
+        </div>
+      </div>
     </div>
+
+    <!-- Brokers -->
+    <div id="tab-brokers" class="tab-panel">
+      <div class="card">
+        <div class="card-title">Create New Broker Account</div>
+        <div class="form-grid cols3">
+          <input id="bUsername" placeholder="Username"/>
+          <input id="bPassword" placeholder="Password" type="password"/>
+          <input id="bFullName" placeholder="Full Name"/>
+          <input id="bDept"     placeholder="Department (optional)" style="grid-column:span 3"/>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-blue" onclick="createBroker()">+ Create Broker</button>
+          <span id="brokerMsg" class="msg"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Registered Brokers</div>
+        <table>
+          <thead><tr><th>Full Name</th><th>Username</th><th>Role</th></tr></thead>
+          <tbody id="brokersBody"><tr><td colspan="3">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div id="tab-transactions" class="tab-panel">
+      <div class="card">
+        <div class="card-title">All Platform Transactions</div>
+        <table>
+          <thead><tr><th>Time</th><th>Client</th><th>Side</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody id="txBody"><tr><td colspan="7">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>BrokerCraft Admin v1.1</span>
+    <span id="lastUpdated">Connecting...</span>
   </div>
 
-  <!-- Transactions tab -->
-  <div id="tab-transactions" class="tab-panel">
-    <div class="card">
-      <div class="card-title">All Platform Transactions</div>
-      <table>
-        <thead><tr><th>Time</th><th>Client</th><th>Side</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
-        <tbody id="txBody"><tr><td colspan="7">Loading...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /content -->
-
-<!-- ── Footer ── -->
-<div class="footer">
-  <span>BrokerCraft Admin v1.0</span>
-  <span id="lastUpdated">Connecting...</span>
-</div>
+</div><!-- /dashboard -->
 
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
 let currentTab = 'overview';
 let pendingApproveClientId = null;
+let loggedInAdmin = null;
+let refreshTimer = null;
 
-// ── Tab switching ─────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════
+
+/**
+ * doLogin — calls /api/admin/login with username+password.
+ * On success: hides login screen, shows dashboard, starts auto-refresh.
+ */
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginErr');
+  errEl.textContent = '';
+
+  if (!username || !password) {
+    errEl.textContent = 'Enter username and password.'; return;
+  }
+
+  try {
+    const res = await post('/api/admin/login', { username, password });
+    if (res.success) {
+      loggedInAdmin = res.fullName || username;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display   = 'block';
+      document.getElementById('headerAdmin').textContent   = '● ' + loggedInAdmin;
+      startDashboard();
+    } else {
+      errEl.textContent = res.error || 'Invalid credentials.';
+    }
+  } catch (e) {
+    errEl.textContent = 'Cannot reach server. Is it running?';
+  }
+}
+
+function doLogout() {
+  loggedInAdmin = null;
+  if (refreshTimer) clearInterval(refreshTimer);
+  document.getElementById('dashboard').style.display    = 'none';
+  document.getElementById('loginScreen').style.display  = 'flex';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+function startDashboard() {
+  refresh();
+  refreshTimer = setInterval(refresh, 5000);
+}
+
+// ════════════════════════════════════════
+// TAB SWITCHING
+// ════════════════════════════════════════
 function switchTab(name) {
   currentTab = name;
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    const names = ['overview','approvals','brokers','transactions'];
-    t.classList.toggle('active', names[i] === name);
-  });
+  const names = ['overview','approvals','brokers','transactions'];
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', names[i] === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   loadTab(name);
 }
 
 function loadTab(name) {
-  if (name === 'overview')      loadStocks();
-  if (name === 'approvals')     loadPending();
-  if (name === 'brokers')       loadBrokers();
-  if (name === 'transactions')  loadTransactions();
+  if (name === 'overview')     loadStocks();
+  if (name === 'approvals')    loadPending();
+  if (name === 'brokers')      loadBrokers();
+  if (name === 'transactions') loadTransactions();
 }
 
-// ── API helpers ───────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// API HELPERS
+// ════════════════════════════════════════
 async function get(url) {
   const r = await fetch(url); return r.json();
 }
 async function post(url, body) {
   const r = await fetch(url, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   return r.json();
 }
 
-// ── Stats (header cards) ──────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════
 async function loadStats() {
   const s = await get('/api/stats');
   document.getElementById('statPending').textContent = s.pendingCount ?? '—';
@@ -308,22 +442,21 @@ async function loadStats() {
   document.getElementById('statTx').textContent      = s.txCount      ?? '—';
   document.getElementById('statStocks').textContent  = s.stockCount   ?? '—';
   const badge = document.getElementById('simBadge');
-  if (s.simRunning) {
-    badge.textContent = '● SIM ON';
-    badge.className = 'badge badge-on';
-  } else {
-    badge.textContent = '● SIM OFF';
-    badge.className = 'badge badge-off';
-  }
+  badge.textContent = s.simRunning ? '● SIM ON' : '● SIM OFF';
+  badge.className   = 'badge ' + (s.simRunning ? 'badge-on' : 'badge-off');
   document.getElementById('lastUpdated').textContent =
     'Last updated: ' + new Date().toLocaleTimeString();
 }
 
-// ── Stocks ────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// STOCKS
+// ════════════════════════════════════════
 async function loadStocks() {
   const stocks = await get('/api/stocks');
   const tbody = document.getElementById('stocksBody');
-  if (!stocks.length) { tbody.innerHTML = '<tr><td colspan="3">No stocks found.</td></tr>'; return; }
+  if (!stocks.length) {
+    tbody.innerHTML = '<tr><td colspan="3">No stocks found.</td></tr>'; return;
+  }
   tbody.innerHTML = stocks.map(s => `
     <tr>
       <td><strong>${s.symbol}</strong></td>
@@ -332,7 +465,9 @@ async function loadStocks() {
     </tr>`).join('');
 }
 
-// ── Pending clients ───────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// PENDING CLIENTS
+// ════════════════════════════════════════
 async function loadPending() {
   const list = await get('/api/pending');
   const tbody = document.getElementById('pendingBody');
@@ -355,20 +490,16 @@ async function loadPending() {
     </tr>`).join('');
 }
 
-// Show the approve form for a specific client
 async function startApprove(clientId, name) {
   pendingApproveClientId = clientId;
   document.getElementById('approveClientName').textContent = name;
-  document.getElementById('approveMsg').textContent = '';
-
-  // Load brokers into the select dropdown
+  clearMsg('approveMsg');
   const brokers = await get('/api/brokers');
   const sel = document.getElementById('brokerSelect');
   sel.innerHTML = '<option value="">Select broker...</option>' +
     brokers.map(b => `<option value="${b.id}">${b.fullName} (${b.username})</option>`).join('');
-
   document.getElementById('approveForm').style.display = 'block';
-  document.getElementById('approveForm').scrollIntoView({behavior:'smooth'});
+  document.getElementById('approveForm').scrollIntoView({ behavior: 'smooth' });
 }
 
 function cancelApprove() {
@@ -384,9 +515,7 @@ async function confirmApprove() {
   });
   showMsg('approveMsg', res.message || res.error, res.success);
   if (res.success) {
-    cancelApprove();
-    loadPending();
-    loadStats();
+    setTimeout(() => { cancelApprove(); loadPending(); loadStats(); }, 1500);
   }
 }
 
@@ -398,11 +527,15 @@ async function rejectClient(clientId) {
   loadStats();
 }
 
-// ── Brokers ───────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// BROKERS
+// ════════════════════════════════════════
 async function loadBrokers() {
   const brokers = await get('/api/brokers');
   const tbody = document.getElementById('brokersBody');
-  if (!brokers.length) { tbody.innerHTML = '<tr><td colspan="3">No brokers yet.</td></tr>'; return; }
+  if (!brokers.length) {
+    tbody.innerHTML = '<tr><td colspan="3">No brokers yet.</td></tr>'; return;
+  }
   tbody.innerHTML = brokers.map(b => `
     <tr>
       <td>${b.fullName}</td>
@@ -416,28 +549,37 @@ async function createBroker() {
   const password   = document.getElementById('bPassword').value;
   const fullName   = document.getElementById('bFullName').value.trim();
   const department = document.getElementById('bDept').value.trim();
+
   if (!username || !password || !fullName) {
-    showMsg('brokerMsg', 'Fill in all fields.', false); return;
+    showMsg('brokerMsg', 'Username, password and full name are required.', false); return;
   }
-  const res = await post('/api/brokers/create', {username, password, fullName, department});
+
+  const res = await post('/api/brokers/create', { username, password, fullName, department });
+
   if (res.id) {
-    showMsg('brokerMsg', 'Broker created successfully.', true);
+    // Clear form immediately
     document.getElementById('bUsername').value = '';
     document.getElementById('bPassword').value = '';
     document.getElementById('bFullName').value = '';
-    document.getElementById('bDept').value = '';
+    document.getElementById('bDept').value     = '';
+    // Show success — auto-clears after 3 seconds
+    showMsg('brokerMsg', 'Broker created successfully.', true);
     loadBrokers();
     loadStats();
   } else {
-    showMsg('brokerMsg', res.error || 'Failed.', false);
+    showMsg('brokerMsg', res.error || 'Failed to create broker.', false);
   }
 }
 
-// ── Transactions ──────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// TRANSACTIONS
+// ════════════════════════════════════════
 async function loadTransactions() {
   const txs = await get('/api/transactions');
   const tbody = document.getElementById('txBody');
-  if (!txs.length) { tbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No transactions yet.</td></tr>'; return; }
+  if (!txs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No transactions yet.</td></tr>'; return;
+  }
   tbody.innerHTML = txs.map(t => `
     <tr>
       <td style="color:#94a3b8;font-size:12px;">${t.timestamp || ''}</td>
@@ -450,31 +592,44 @@ async function loadTransactions() {
     </tr>`).join('');
 }
 
-// ── Simulation ────────────────────────────────────────────────────────────────
-async function startSim() {
-  await post('/api/simulation/start', {});
-  loadStats();
-}
-async function stopSim() {
-  await post('/api/simulation/stop', {});
-  loadStats();
-}
+// ════════════════════════════════════════
+// SIMULATION
+// ════════════════════════════════════════
+async function startSim() { await post('/api/simulation/start', {}); loadStats(); }
+async function stopSim()  { await post('/api/simulation/stop',  {}); loadStats(); }
 
-// ── Utility ───────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// MESSAGE HELPERS
+// auto-clears success messages after 3s
+// ════════════════════════════════════════
 function showMsg(id, text, ok) {
   const el = document.getElementById(id);
   el.textContent = text;
   el.className = 'msg ' + (ok ? 'msg-ok' : 'msg-err');
+  el.style.opacity = '1';
+  if (ok) {
+    // auto-fade after 3 seconds
+    setTimeout(() => {
+      el.classList.add('fade-out');
+      setTimeout(() => clearMsg(id), 500);
+    }, 3000);
+  }
 }
 
-// ── Auto-refresh every 5 seconds ──────────────────────────────────────────────
+function clearMsg(id) {
+  const el = document.getElementById(id);
+  el.textContent = '';
+  el.className = 'msg';
+  el.style.opacity = '1';
+}
+
+// ════════════════════════════════════════
+// AUTO-REFRESH
+// ════════════════════════════════════════
 function refresh() {
   loadStats();
   loadTab(currentTab);
 }
-
-refresh(); // initial load
-setInterval(refresh, 5000); // auto-refresh
 </script>
 </body>
 </html>

@@ -67,7 +67,12 @@
                 </VBox>
 
                 <Separator/>
-                <Label text="Demo: admin / admin123 (Admin role)" styleClass="subtitle"/>
+                <VBox spacing="6" alignment="CENTER_LEFT">
+                    <Label text="Admin?" styleClass="field-label"/>
+                    <Button text="Open Admin Web Dashboard →" onAction="#onOpenAdminDashboard"
+                            styleClass="button-secondary" maxWidth="Infinity"/>
+                    <Label text="Opens http://localhost:7000/admin in your browser"
+                           styleClass="subtitle" wrapText="true"/></VBox>
             </VBox>
         </VBox>
     </center>

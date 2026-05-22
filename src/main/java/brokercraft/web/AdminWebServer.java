@@ -1,5 +1,15 @@
 package brokercraft.web;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
 import brokercraft.database.DatabaseManager;
 import brokercraft.database.Db;
 import brokercraft.model.ClientProfile;
@@ -7,20 +17,10 @@ import brokercraft.model.Stock;
 import brokercraft.model.Transaction;
 import brokercraft.model.User;
 import brokercraft.model.UserRole;
-import brokercraft.rmi.BrokerCraftServiceImpl;
 import brokercraft.service.AuthService;
 import brokercraft.simulation.PriceSimulator;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * AdminWebServer — runs an embedded HTTP server on port 7000.
@@ -76,12 +76,12 @@ public class AdminWebServer {
         app.get("/api/stats",        this::getStats);
 
         // ── API: actions ─────────────────────────────────────────────────────
-        app.post("/api/brokers/create",    this::createBroker);
-        app.post("/api/clients/approve",   this::approveClient);
-        app.post("/api/clients/reject",    this::rejectClient);
-        app.post("/api/simulation/start",  this::startSimulation);
-        app.post("/api/simulation/stop",   this::stopSimulation);
-
+        app.post("/api/admin/login",        this::adminLogin);
+        app.post("/api/brokers/create",     this::createBroker);
+        app.post("/api/clients/approve",    this::approveClient);
+        app.post("/api/clients/reject",     this::rejectClient);
+        app.post("/api/simulation/start",   this::startSimulation);
+        app.post("/api/simulation/stop",    this::stopSimulation);
         app.start(PORT);
         System.out.println("Admin web dashboard → http://localhost:" + PORT + "/admin");
     }
@@ -91,6 +91,30 @@ public class AdminWebServer {
     }
 
     // ── Handlers ─────────────────────────────────────────────────────────────
+
+    /**
+     * POST /api/admin/login — body: {username, password}
+     * Validates that the user exists, password matches, and role is ADMIN.
+     */
+    private void adminLogin(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            String username = body.get("username").getAsString();
+            String password = body.get("password").getAsString();
+
+            var userOpt = Db.query(() -> db.findUserByUsername(username));
+            if (userOpt.isEmpty()
+                    || !userOpt.get().getPassword().equals(password)
+                    || userOpt.get().getRole() != UserRole.ADMIN) {
+                ctx.status(401).json("{\"success\":false,\"error\":\"Invalid admin credentials.\"}");
+                return;
+            }
+            User admin = userOpt.get();
+            ctx.json("{\"success\":true,\"fullName\":\"" + admin.getFullName() + "\"}");
+        } catch (Exception e) {
+            ctx.status(500).json(error(e.getMessage()));
+        }
+    }
 
     /** GET /api/brokers — list all broker users */
     private void getBrokers(Context ctx) {
