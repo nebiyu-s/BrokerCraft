@@ -616,19 +616,25 @@ async function loadBrokers() {
       </td>
     </tr>`).join('');
 
-  // Also populate reassign dropdowns
-  const clientSel  = document.getElementById('reassignClientSelect');
-  const brokerSel  = document.getElementById('reassignBrokerSelect');
-  brokerSel.innerHTML = '<option value="">Select new broker...</option>' +
-    brokers.map(b => `<option value="${b.id}">${b.fullName} (${b.username})</option>`).join('');
+  // Only populate the reassign dropdowns if they are empty (first load)
+  // This prevents the auto-refresh from wiping the user's current selection
+  const brokerSel = document.getElementById('reassignBrokerSelect');
+  const clientSel = document.getElementById('reassignClientSelect');
 
-  const clients = await get('/api/clients/approved');
-  clientSel.innerHTML = '<option value="">Select client...</option>' +
-    clients.map(c => {
-      const currentBroker = brokers.find(b => b.id === c.brokerId);
-      const brokerName = currentBroker ? ` → currently: ${currentBroker.fullName}` : '';
-      return `<option value="${c.userId}">${c.fullName} (${c.username})${brokerName}</option>`;
-    }).join('');
+  if (brokerSel.options.length <= 1) {
+    brokerSel.innerHTML = '<option value="">Select new broker...</option>' +
+      brokers.map(b => `<option value="${b.id}">${b.fullName} (${b.username})</option>`).join('');
+  }
+
+  if (clientSel.options.length <= 1) {
+    const clients = await get('/api/clients/approved');
+    clientSel.innerHTML = '<option value="">Select client...</option>' +
+      clients.map(c => {
+        const currentBroker = brokers.find(b => b.id === c.brokerId);
+        const brokerName = currentBroker ? ` → ${currentBroker.fullName}` : '';
+        return `<option value="${c.userId}">${c.fullName} (${c.username})${brokerName}</option>`;
+      }).join('');
+  }
 }
 
 function startEditBroker(id, fullName, dept) {
