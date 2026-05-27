@@ -73,29 +73,35 @@ public class AdminWebServer {
         // ── API: read data ───────────────────────────────────────────────────
         app.get("/api/brokers",           this::getBrokers);
         app.get("/api/pending",           this::getPendingClients);
+        app.get("/api/clients/all",       this::getAllClients);
         app.get("/api/transactions",      this::getTransactions);
         app.get("/api/stocks",            this::getStocks);
         app.get("/api/sessions",          this::getSessions);
         app.get("/api/stats",             this::getStats);
         app.get("/api/companies/pending", this::getPendingCompanies);
+        app.get("/api/companies/all",     this::getAllCompanies);
         app.get("/api/ipos/pending",      this::getPendingIpos);
         app.get("/api/ipos/all",          this::getAllIpos);
         app.get("/api/clients/approved",  this::getApprovedClients);
 
         // ── API: actions ─────────────────────────────────────────────────────
-        app.post("/api/admin/login",        this::adminLogin);
-        app.post("/api/brokers/create",     this::createBroker);
-        app.post("/api/brokers/update",     this::updateBroker);
-        app.post("/api/brokers/delete",     this::deleteBroker);
-        app.post("/api/clients/approve",    this::approveClient);
-        app.post("/api/clients/reject",     this::rejectClient);
-        app.post("/api/clients/reassign",   this::reassignClient);
-        app.post("/api/companies/approve",  this::approveCompany);
-        app.post("/api/companies/reject",   this::rejectCompany);
-        app.post("/api/ipos/approve",       this::approveIpo);
-        app.post("/api/ipos/reject",        this::rejectIpo);
-        app.post("/api/simulation/start",   this::startSimulation);
-        app.post("/api/simulation/stop",    this::stopSimulation);
+        app.post("/api/admin/login",          this::adminLogin);
+        app.post("/api/brokers/create",       this::createBroker);
+        app.post("/api/brokers/update",       this::updateBroker);
+        app.post("/api/brokers/delete",       this::deleteBroker);
+        app.post("/api/brokers/resetpw",      this::resetBrokerPassword);
+        app.post("/api/clients/approve",      this::approveClient);
+        app.post("/api/clients/reject",       this::rejectClient);
+        app.post("/api/clients/reassign",     this::reassignClient);
+        app.post("/api/clients/toggle",       this::toggleClientActive);
+        app.post("/api/clients/delete",       this::deleteClient);
+        app.post("/api/companies/approve",    this::approveCompany);
+        app.post("/api/companies/reject",     this::rejectCompany);
+        app.post("/api/companies/toggle",     this::toggleCompanyActive);
+        app.post("/api/ipos/approve",         this::approveIpo);
+        app.post("/api/ipos/reject",          this::rejectIpo);
+        app.post("/api/simulation/start",     this::startSimulation);
+        app.post("/api/simulation/stop",      this::stopSimulation);
         app.start(PORT);
         System.out.println("Admin web dashboard → http://localhost:" + PORT + "/admin");
     }
@@ -198,11 +204,12 @@ public class AdminWebServer {
     /** GET /api/stats — summary numbers for the dashboard header cards */
     private void getStats(Context ctx) {
         Map<String, Object> stats = new HashMap<>();
-        stats.put("pendingCount",  Db.query(db::findPendingClients).size());
-        stats.put("brokerCount",   Db.query(() -> db.findUsersByRole(UserRole.BROKER)).size());
-        stats.put("txCount",       Db.query(db::getAllTransactions).size());
-        stats.put("stockCount",    Db.query(db::getAllStocks).size());
-        stats.put("simRunning",    priceSimulator.isRunning());
+        stats.put("pendingCount",   Db.query(db::findPendingClients).size());
+        stats.put("brokerCount",    Db.query(() -> db.findUsersByRole(UserRole.BROKER)).size());
+        stats.put("txCount",        Db.query(db::getAllTransactions).size());
+        stats.put("stockCount",     Db.query(db::getAllStocks).size());
+        stats.put("companyCount",   Db.query(db::findApprovedCompanies).size());
+        stats.put("simRunning",     priceSimulator.isRunning());
         ctx.json(GSON.toJson(stats));
     }
 
@@ -309,6 +316,121 @@ public class AdminWebServer {
         } catch (Exception e) {
             ctx.status(400).json(error(e.getMessage()));
         }
+    }
+
+    /** POST /api/brokers/resetpw — body: {brokerId, newPassword} */
+    private void resetBrokerPassword(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int    brokerId    = body.get("brokerId").getAsInt();
+            String newPassword = body.get("newPassword").getAsString();
+            if (newPassword.length() < 4) {
+                ctx.status(400).json(error("Password must be at least 4 characters.")); return;
+            }
+            var userOpt = Db.query(() -> db.findUserById(brokerId));
+            if (userOpt.isEmpty()) { ctx.status(404).json(error("Broker not found.")); return; }
+            User user = userOpt.get();
+            user.setPassword(newPassword);
+            Db.execute(() -> db.saveUser(user));
+            ctx.json(ok("Password reset successfully."));
+        } catch (Exception e) { ctx.status(400).json(error(e.getMessage())); }
+    }
+
+    /** GET /api/clients/all — all clients with full details */
+    private void getAllClients(Context ctx) {
+        try {
+            List<ClientProfile> all = Db.query(db::findAllApprovedClients);
+            List<Map<String, Object>> result = new java.util.ArrayList<>();
+            List<User> brokers = Db.query(() -> db.findUsersByRole(UserRole.BROKER));
+            for (ClientProfile cp : all) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("userId",   cp.getUserId());
+                row.put("email",    cp.getEmail());
+                row.put("balance",  cp.getBalance());
+                row.put("status",   cp.getStatus().name());
+                User u = Db.query(() -> db.findUserById(cp.getUserId()).orElse(null));
+                row.put("fullName", u != null ? u.getFullName() : "?");
+                row.put("username", u != null ? u.getUsername() : "?");
+                row.put("active",   u != null && u.isActive());
+                User broker = brokers.stream()
+                        .filter(b -> b.getId() == (cp.getAssignedBrokerId() != null ? cp.getAssignedBrokerId() : -1))
+                        .findFirst().orElse(null);
+                row.put("brokerName", broker != null ? broker.getFullName() : "Unassigned");
+                result.add(row);
+            }
+            ctx.json(GSON.toJson(result));
+        } catch (Exception e) { ctx.status(500).json(error(e.getMessage())); }
+    }
+
+    /** POST /api/clients/toggle — suspend or reactivate a client */
+    private void toggleClientActive(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int clientId = body.get("clientId").getAsInt();
+            var userOpt = Db.query(() -> db.findUserById(clientId));
+            if (userOpt.isEmpty()) { ctx.status(404).json(error("Client not found.")); return; }
+            User user = userOpt.get();
+            user.setActive(!user.isActive());
+            Db.execute(() -> db.saveUser(user));
+            ctx.json(ok(user.isActive() ? "Client reactivated." : "Client suspended."));
+        } catch (Exception e) { ctx.status(400).json(error(e.getMessage())); }
+    }
+
+    /** POST /api/clients/delete — permanently delete a client */
+    private void deleteClient(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int clientId = body.get("clientId").getAsInt();
+            String sql = "DELETE FROM users WHERE id = ?";
+            Db.execute(() -> {
+                try (var conn = brokercraft.database.DatabaseConnection.getConnection();
+                     var ps = conn.prepareStatement(sql)) {
+                    ps.setInt(1, clientId);
+                    ps.executeUpdate();
+                }
+            });
+            ctx.json(ok("Client deleted."));
+        } catch (Exception e) { ctx.status(400).json(error(e.getMessage())); }
+    }
+
+    /** GET /api/companies/all — all companies (pending + approved + rejected) */
+    private void getAllCompanies(Context ctx) {
+        try {
+            // Get all company users
+            List<User> companyUsers = Db.query(() -> db.findUsersByRole(UserRole.COMPANY));
+            List<Map<String, Object>> result = new java.util.ArrayList<>();
+            for (User u : companyUsers) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("userId",   u.getId());
+                row.put("fullName", u.getFullName());
+                row.put("username", u.getUsername());
+                row.put("active",   u.isActive());
+                var profile = Db.query(() -> db.findCompanyProfile(u.getId()).orElse(null));
+                row.put("email",       profile != null ? profile.getEmail() : "");
+                row.put("industry",    profile != null ? profile.getIndustry() : "");
+                row.put("description", profile != null ? profile.getDescription() : "");
+                row.put("status",      profile != null ? profile.getStatus().name() : "UNKNOWN");
+                // Count their IPOs
+                int ipoCount = Db.query(() -> db.findIposByCompany(u.getId())).size();
+                row.put("ipoCount", ipoCount);
+                result.add(row);
+            }
+            ctx.json(GSON.toJson(result));
+        } catch (Exception e) { ctx.status(500).json(error(e.getMessage())); }
+    }
+
+    /** POST /api/companies/toggle — suspend or reactivate a company */
+    private void toggleCompanyActive(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int companyId = body.get("companyId").getAsInt();
+            var userOpt = Db.query(() -> db.findUserById(companyId));
+            if (userOpt.isEmpty()) { ctx.status(404).json(error("Company not found.")); return; }
+            User user = userOpt.get();
+            user.setActive(!user.isActive());
+            Db.execute(() -> db.saveUser(user));
+            ctx.json(ok(user.isActive() ? "Company reactivated." : "Company suspended."));
+        } catch (Exception e) { ctx.status(400).json(error(e.getMessage())); }
     }
 
     /** POST /api/simulation/start */

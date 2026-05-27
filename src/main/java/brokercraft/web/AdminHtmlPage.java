@@ -245,12 +245,17 @@ public final class AdminHtmlPage {
       <div class="stat-label">Listed Stocks</div>
       <div class="stat-value" id="statStocks">—</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-label">Companies</div>
+      <div class="stat-value" id="statCompanies">—</div>
+    </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
     <div class="tab active" onclick="switchTab('overview')">Overview</div>
     <div class="tab" onclick="switchTab('approvals')">Client Approvals</div>
+    <div class="tab" onclick="switchTab('clients')">All Clients</div>
     <div class="tab" onclick="switchTab('companies')">Companies</div>
     <div class="tab" onclick="switchTab('ipos')">IPO Approvals</div>
     <div class="tab" onclick="switchTab('brokers')">Brokers</div>
@@ -327,6 +332,10 @@ public final class AdminHtmlPage {
           <input id="editBFullName"   placeholder="Full Name"/>
           <input id="editBDept"       placeholder="Department" style="grid-column:span 2"/>
         </div>
+        <div style="margin-top:12px;">
+          <p style="color:#94a3b8;font-size:12px;margin-bottom:8px;">Reset password (leave blank to keep current):</p>
+          <input id="editBPassword" type="password" placeholder="New password (optional)" style="width:100%;padding:10px 14px;background:#0b1220;color:#f1f5f9;border:1.5px solid #334155;border-radius:10px;font-size:13px;"/>
+        </div>
         <div class="form-actions">
           <button class="btn btn-blue"  onclick="confirmEditBroker()">Save Changes</button>
           <button class="btn btn-gray"  onclick="cancelEditBroker()">Cancel</button>
@@ -369,6 +378,24 @@ public final class AdminHtmlPage {
         <table>
           <thead><tr><th>Company Name</th><th>Username</th><th>Email</th><th>Industry</th><th>Description</th><th>Action</th></tr></thead>
           <tbody id="companiesBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">All Registered Companies</div>
+        <table>
+          <thead><tr><th>Company Name</th><th>Username</th><th>Industry</th><th>IPOs</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="allCompaniesBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- All Clients -->
+    <div id="tab-clients" class="tab-panel">
+      <div class="card">
+        <div class="card-title">All Approved Clients</div>
+        <table>
+          <thead><tr><th>Full Name</th><th>Username</th><th>Email</th><th>Balance (ETB)</th><th>Broker</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="allClientsBody"><tr><td colspan="7">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -464,7 +491,7 @@ function startDashboard() {
 // ════════════════════════════════════════
 function switchTab(name) {
   currentTab = name;
-  const names = ['overview','approvals','companies','ipos','brokers','transactions'];
+  const names = ['overview','approvals','clients','companies','ipos','brokers','transactions'];
   document.querySelectorAll('.tab').forEach((t, i) =>
     t.classList.toggle('active', names[i] === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -475,6 +502,7 @@ function switchTab(name) {
 function loadTab(name) {
   if (name === 'overview')     loadStocks();
   if (name === 'approvals')    loadPending();
+  if (name === 'clients')      loadAllClients();
   if (name === 'companies')    loadCompanies();
   if (name === 'ipos')         loadIpos();
   if (name === 'brokers')      loadBrokers();
@@ -501,10 +529,11 @@ async function post(url, body) {
 // ════════════════════════════════════════
 async function loadStats() {
   const s = await get('/api/stats');
-  document.getElementById('statPending').textContent = s.pendingCount ?? '—';
-  document.getElementById('statBrokers').textContent = s.brokerCount  ?? '—';
-  document.getElementById('statTx').textContent      = s.txCount      ?? '—';
-  document.getElementById('statStocks').textContent  = s.stockCount   ?? '—';
+  document.getElementById('statPending').textContent   = s.pendingCount   ?? '—';
+  document.getElementById('statBrokers').textContent   = s.brokerCount    ?? '—';
+  document.getElementById('statTx').textContent        = s.txCount        ?? '—';
+  document.getElementById('statStocks').textContent    = s.stockCount     ?? '—';
+  document.getElementById('statCompanies').textContent = s.companyCount   ?? '—';
   const badge = document.getElementById('simBadge');
   badge.textContent = s.simRunning ? '● SIM ON' : '● SIM OFF';
   badge.className   = 'badge ' + (s.simRunning ? 'badge-on' : 'badge-off');
@@ -654,14 +683,32 @@ function cancelEditBroker() {
 async function confirmEditBroker() {
   const fullName   = document.getElementById('editBFullName').value.trim();
   const department = document.getElementById('editBDept').value.trim();
+  const newPw      = document.getElementById('editBPassword').value;
   if (!fullName) { showMsg('editBrokerMsg', 'Full name is required.', false); return; }
+
+  // Update name and department
   const res = await post('/api/brokers/update', {
     brokerId: editingBrokerId, fullName, department
   });
-  showMsg('editBrokerMsg', res.message || res.error, res.success);
-  if (res.success) {
-    setTimeout(() => { cancelEditBroker(); loadBrokers(); loadStats(); }, 1500);
+  if (!res.success) { showMsg('editBrokerMsg', res.error, false); return; }
+
+  // Reset password if provided
+  if (newPw.trim()) {
+    const pwRes = await post('/api/brokers/resetpw', {
+      brokerId: editingBrokerId, newPassword: newPw
+    });
+    if (!pwRes.success) { showMsg('editBrokerMsg', pwRes.error, false); return; }
+    showMsg('editBrokerMsg', 'Broker updated and password reset.', true);
+  } else {
+    showMsg('editBrokerMsg', res.message, true);
   }
+
+  setTimeout(() => {
+    cancelEditBroker();
+    document.getElementById('editBPassword').value = '';
+    loadBrokers();
+    loadStats();
+  }, 1500);
 }
 
 async function doDeleteBroker(brokerId, name) {
@@ -776,29 +823,100 @@ async function startSim() { await post('/api/simulation/start', {}); loadStats()
 async function stopSim()  { await post('/api/simulation/stop',  {}); loadStats(); }
 
 // ════════════════════════════════════════
-// COMPANIES
+// ALL CLIENTS
 // ════════════════════════════════════════
-async function loadCompanies() {
-  const list = await get('/api/companies/pending');
-  const tbody = document.getElementById('companiesBody');
+async function loadAllClients() {
+  const list = await get('/api/clients/all');
+  const tbody = document.getElementById('allClientsBody');
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:#64748b;">No pending company registrations.</td></tr>';
-    return;
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No approved clients yet.</td></tr>'; return;
   }
-  tbody.innerHTML = list.map(c => `
-    <tr>
+  tbody.innerHTML = list.map(c => {
+    const activeColor = c.active ? '#4ade80' : '#f87171';
+    const activeLabel = c.active ? 'Active' : 'Suspended';
+    const toggleLabel = c.active ? 'Suspend' : 'Reactivate';
+    const toggleClass = c.active ? 'btn-yellow' : 'btn-green';
+    return `<tr>
       <td><strong>${c.fullName}</strong></td>
       <td>${c.username}</td>
       <td>${c.email}</td>
-      <td><span style="color:#a78bfa;">${c.industry}</span></td>
-      <td style="color:#94a3b8;font-size:12px;">${c.description || '—'}</td>
+      <td style="color:#93c5fd;font-weight:700;">${c.balance.toFixed(2)}</td>
+      <td>${c.brokerName}</td>
+      <td><span style="color:${activeColor};font-weight:700;">${activeLabel}</span></td>
       <td>
-        <button class="btn btn-blue" style="padding:5px 12px;font-size:12px;"
-          onclick="approveCompany(${c.userId})">Approve</button>
-        <button class="btn btn-red" style="padding:5px 12px;font-size:12px;margin-left:6px;"
-          onclick="rejectCompany(${c.userId})">Reject</button>
+        <button class="btn ${toggleClass}" style="padding:5px 10px;font-size:12px;"
+          onclick="toggleClient(${c.userId})">${toggleLabel}</button>
+        <button class="btn btn-red" style="padding:5px 10px;font-size:12px;margin-left:4px;"
+          onclick="deleteClient(${c.userId},'${c.fullName}')">Delete</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
+}
+
+async function toggleClient(clientId) {
+  const res = await post('/api/clients/toggle', { clientId });
+  alert(res.message || res.error);
+  loadAllClients();
+}
+
+async function deleteClient(clientId, name) {
+  if (!confirm(`Permanently delete client "${name}"?\n\nThis cannot be undone. All their data will be removed.`)) return;
+  const res = await post('/api/clients/delete', { clientId });
+  alert(res.message || res.error);
+  loadAllClients(); loadStats();
+}
+
+// ════════════════════════════════════════
+// COMPANIES (updated with all companies)
+// ════════════════════════════════════════
+async function loadCompanies() {
+  // Pending
+  const pending = await get('/api/companies/pending');
+  const tbody = document.getElementById('companiesBody');
+  if (!pending.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#64748b;">No pending company registrations.</td></tr>';
+  } else {
+    tbody.innerHTML = pending.map(c => `
+      <tr>
+        <td><strong>${c.fullName}</strong></td>
+        <td>${c.username}</td>
+        <td>${c.email}</td>
+        <td><span style="color:#a78bfa;">${c.industry}</span></td>
+        <td style="color:#94a3b8;font-size:12px;">${c.description || '—'}</td>
+        <td>
+          <button class="btn btn-blue" style="padding:5px 12px;font-size:12px;"
+            onclick="approveCompany(${c.userId})">Approve</button>
+          <button class="btn btn-red" style="padding:5px 12px;font-size:12px;margin-left:6px;"
+            onclick="rejectCompany(${c.userId})">Reject</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  // All companies
+  const all = await get('/api/companies/all');
+  const allTbody = document.getElementById('allCompaniesBody');
+  if (!all.length) {
+    allTbody.innerHTML = '<tr><td colspan="6" style="color:#64748b;">No companies registered yet.</td></tr>';
+  } else {
+    allTbody.innerHTML = all.map(c => {
+      const statusColor = {APPROVED:'#4ade80',PENDING:'#fbbf24',REJECTED:'#f87171'}[c.status] || '#94a3b8';
+      const activeLabel = c.active ? 'Active' : 'Suspended';
+      const toggleLabel = c.active ? 'Suspend' : 'Reactivate';
+      const toggleClass = c.active ? 'btn-yellow' : 'btn-green';
+      return `<tr>
+        <td><strong>${c.fullName}</strong></td>
+        <td>${c.username}</td>
+        <td><span style="color:#a78bfa;">${c.industry}</span></td>
+        <td><span style="color:#93c5fd;">${c.ipoCount} IPO(s)</span></td>
+        <td><span style="color:${statusColor};font-weight:700;">${c.status}</span>
+            <span style="color:${c.active?'#4ade80':'#f87171'};font-size:11px;margin-left:6px;">(${activeLabel})</span></td>
+        <td>
+          <button class="btn ${toggleClass}" style="padding:5px 10px;font-size:12px;"
+            onclick="toggleCompany(${c.userId})">${toggleLabel}</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
 }
 
 async function approveCompany(companyId) {
@@ -811,6 +929,12 @@ async function approveCompany(companyId) {
 async function rejectCompany(companyId) {
   if (!confirm('Reject this company registration?')) return;
   const res = await post('/api/companies/reject', { companyId });
+  alert(res.message || res.error);
+  loadCompanies();
+}
+
+async function toggleCompany(companyId) {
+  const res = await post('/api/companies/toggle', { companyId });
   alert(res.message || res.error);
   loadCompanies();
 }
