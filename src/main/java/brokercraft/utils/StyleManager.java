@@ -1,12 +1,17 @@
 package brokercraft.utils;
 
-import brokercraft.model.TransactionType;
+import javafx.animation.PauseTransition;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.util.Duration;
 
 public final class StyleManager {
+
+    /** How long messages stay visible before auto-clearing (seconds) */
+    private static final double MSG_DURATION = 4.0;
+
     private StyleManager() {}
 
     public static void styleTable(TableView<?> table) {
@@ -20,6 +25,7 @@ public final class StyleManager {
             label.getStyleClass().add("message-success");
         }
         label.setText(text);
+        scheduleAutoClear(label);
     }
 
     public static void setError(Label label, String text) {
@@ -28,6 +34,7 @@ public final class StyleManager {
             label.getStyleClass().add("message-error");
         }
         label.setText(text);
+        scheduleAutoClear(label);
     }
 
     public static void setInfo(Label label, String text) {
@@ -36,28 +43,45 @@ public final class StyleManager {
             label.getStyleClass().add("message-info");
         }
         label.setText(text);
+        scheduleAutoClear(label);
+    }
+
+    /**
+     * Schedules the label text to be cleared after MSG_DURATION seconds.
+     * Uses a PauseTransition so it runs on the JavaFX thread safely.
+     * Each call cancels any previous timer on the same label by storing
+     * the transition in the label's properties map.
+     */
+    private static void scheduleAutoClear(Label label) {
+        // Cancel any existing timer for this label
+        Object existing = label.getProperties().get("autoClearTimer");
+        if (existing instanceof PauseTransition old) {
+            old.stop();
+        }
+        PauseTransition pause = new PauseTransition(Duration.seconds(MSG_DURATION));
+        pause.setOnFinished(e -> {
+            label.setText("");
+            label.getStyleClass().removeAll("message-success", "message-error", "message-info");
+        });
+        label.getProperties().put("autoClearTimer", pause);
+        pause.play();
     }
 
     public static String formatCurrency(double amount) {
         return String.format("%,.2f ETB", amount);
     }
 
-    public static void styleTradeSideColumn(TableColumn<brokercraft.model.Transaction, String> column) {
+    public static void styleTradeSideColumn(
+            TableColumn<brokercraft.model.Transaction, String> column) {
         column.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                    return;
-                }
+                if (empty || item == null) { setText(null); setStyle(""); return; }
                 setText(item);
-                if ("BUY".equalsIgnoreCase(item)) {
-                    setStyle("-fx-text-fill: #4ade80; -fx-font-weight: bold;");
-                } else {
-                    setStyle("-fx-text-fill: #f87171; -fx-font-weight: bold;");
-                }
+                setStyle("BUY".equalsIgnoreCase(item)
+                        ? "-fx-text-fill:#4ade80;-fx-font-weight:bold;"
+                        : "-fx-text-fill:#f87171;-fx-font-weight:bold;");
             }
         });
     }
