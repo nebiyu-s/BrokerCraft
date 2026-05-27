@@ -80,12 +80,16 @@ public class AdminWebServer {
         app.get("/api/companies/pending", this::getPendingCompanies);
         app.get("/api/ipos/pending",      this::getPendingIpos);
         app.get("/api/ipos/all",          this::getAllIpos);
+        app.get("/api/clients/approved",  this::getApprovedClients);
 
         // ── API: actions ─────────────────────────────────────────────────────
         app.post("/api/admin/login",        this::adminLogin);
         app.post("/api/brokers/create",     this::createBroker);
+        app.post("/api/brokers/update",     this::updateBroker);
+        app.post("/api/brokers/delete",     this::deleteBroker);
         app.post("/api/clients/approve",    this::approveClient);
         app.post("/api/clients/reject",     this::rejectClient);
+        app.post("/api/clients/reassign",   this::reassignClient);
         app.post("/api/companies/approve",  this::approveCompany);
         app.post("/api/companies/reject",   this::rejectCompany);
         app.post("/api/ipos/approve",       this::approveIpo);
@@ -126,10 +130,30 @@ public class AdminWebServer {
         }
     }
 
-    /** GET /api/brokers — list all broker users */
+    /** GET /api/brokers — list all broker users with client count */
     private void getBrokers(Context ctx) {
-        List<User> brokers = Db.query(() -> db.findUsersByRole(UserRole.BROKER));
-        ctx.json(GSON.toJson(brokers));
+        try {
+            List<User> brokers = Db.query(() -> db.findUsersByRole(UserRole.BROKER));
+            List<Map<String, Object>> result = new java.util.ArrayList<>();
+            for (User b : brokers) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("id",         b.getId());
+                row.put("fullName",   b.getFullName());
+                row.put("username",   b.getUsername());
+                row.put("role",       b.getRole().name());
+                row.put("active",     b.isActive());
+                // Get department
+                var profile = Db.query(() -> db.findBrokerProfile(b.getId()).orElse(null));
+                row.put("department", profile != null ? profile.getDepartment() : "General");
+                // Get client count
+                int clientCount = Db.query(() -> db.findClientsByBroker(b.getId())).size();
+                row.put("clientCount", clientCount);
+                result.add(row);
+            }
+            ctx.json(GSON.toJson(result));
+        } catch (Exception e) {
+            ctx.status(500).json(error(e.getMessage()));
+        }
     }
 
     /** GET /api/pending — list clients waiting for approval */
@@ -217,6 +241,71 @@ public class AdminWebServer {
             int clientId = body.get("clientId").getAsInt();
             authService.rejectClient(clientId);
             ctx.json(ok("Client rejected."));
+        } catch (Exception e) {
+            ctx.status(400).json(error(e.getMessage()));
+        }
+    }
+
+    /** GET /api/clients/approved — all approved clients for reassignment */
+    private void getApprovedClients(Context ctx) {
+        try {
+            List<ClientProfile> clients = Db.query(db::findAllApprovedClients);
+            List<Map<String, Object>> result = new java.util.ArrayList<>();
+            for (ClientProfile cp : clients) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("userId",    cp.getUserId());
+                row.put("brokerId",  cp.getAssignedBrokerId());
+                User u = Db.query(() -> db.findUserById(cp.getUserId()).orElse(null));
+                row.put("fullName",  u != null ? u.getFullName() : "?");
+                row.put("username",  u != null ? u.getUsername() : "?");
+                result.add(row);
+            }
+            ctx.json(GSON.toJson(result));
+        } catch (Exception e) {
+            ctx.status(500).json(error(e.getMessage()));
+        }
+    }
+
+    /** POST /api/brokers/update — body: {brokerId, fullName, department} */
+    private void updateBroker(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int    brokerId   = body.get("brokerId").getAsInt();
+            String fullName   = body.get("fullName").getAsString();
+            String department = body.get("department").getAsString();
+            var userOpt = Db.query(() -> db.findUserById(brokerId));
+            if (userOpt.isEmpty()) { ctx.status(404).json(error("Broker not found.")); return; }
+            User user = userOpt.get();
+            user.setFullName(fullName);
+            Db.execute(() -> db.saveUser(user));
+            Db.execute(() -> db.saveBrokerProfile(
+                    new brokercraft.model.BrokerProfile(brokerId, department)));
+            ctx.json(ok("Broker updated."));
+        } catch (Exception e) {
+            ctx.status(400).json(error(e.getMessage()));
+        }
+    }
+
+    /** POST /api/brokers/delete — body: {brokerId} */
+    private void deleteBroker(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int brokerId = body.get("brokerId").getAsInt();
+            Db.execute(() -> db.deleteBroker(brokerId));
+            ctx.json(ok("Broker deleted. Their clients have been unassigned."));
+        } catch (Exception e) {
+            ctx.status(400).json(error(e.getMessage()));
+        }
+    }
+
+    /** POST /api/clients/reassign — body: {clientId, brokerId} */
+    private void reassignClient(Context ctx) {
+        try {
+            JsonObject body = GSON.fromJson(ctx.body(), JsonObject.class);
+            int clientId = body.get("clientId").getAsInt();
+            int brokerId = body.get("brokerId").getAsInt();
+            Db.execute(() -> db.reassignClient(clientId, brokerId));
+            ctx.json(ok("Client reassigned successfully."));
         } catch (Exception e) {
             ctx.status(400).json(error(e.getMessage()));
         }

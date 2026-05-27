@@ -311,12 +311,43 @@ public final class AdminHtmlPage {
           <span id="brokerMsg" class="msg"></span>
         </div>
       </div>
+
       <div class="card">
         <div class="card-title">Registered Brokers</div>
         <table>
-          <thead><tr><th>Full Name</th><th>Username</th><th>Role</th></tr></thead>
-          <tbody id="brokersBody"><tr><td colspan="3">Loading...</td></tr></tbody>
+          <thead><tr><th>Full Name</th><th>Username</th><th>Department</th><th>Clients</th><th>Actions</th></tr></thead>
+          <tbody id="brokersBody"><tr><td colspan="5">Loading...</td></tr></tbody>
         </table>
+      </div>
+
+      <!-- Edit broker form (hidden until edit clicked) -->
+      <div id="editBrokerForm" style="display:none;" class="card">
+        <div class="card-title">Edit Broker</div>
+        <div class="form-grid cols3">
+          <input id="editBFullName"   placeholder="Full Name"/>
+          <input id="editBDept"       placeholder="Department" style="grid-column:span 2"/>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-blue"  onclick="confirmEditBroker()">Save Changes</button>
+          <button class="btn btn-gray"  onclick="cancelEditBroker()">Cancel</button>
+          <span id="editBrokerMsg" class="msg"></span>
+        </div>
+      </div>
+
+      <!-- Reassign client form -->
+      <div class="card">
+        <div class="card-title">Reassign Client to Different Broker</div>
+        <p style="color:#94a3b8;margin-bottom:12px;font-size:13px;">
+          Move an approved client from their current broker to a new one.
+        </p>
+        <div class="form-grid">
+          <select id="reassignClientSelect"><option value="">Select client...</option></select>
+          <select id="reassignBrokerSelect"><option value="">Select new broker...</option></select>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-blue" onclick="doReassign()">Reassign Client</button>
+          <span id="reassignMsg" class="msg"></span>
+        </div>
       </div>
     </div>
 
@@ -563,18 +594,86 @@ async function rejectClient(clientId) {
 // ════════════════════════════════════════
 // BROKERS
 // ════════════════════════════════════════
+let editingBrokerId = null;
+
 async function loadBrokers() {
   const brokers = await get('/api/brokers');
   const tbody = document.getElementById('brokersBody');
   if (!brokers.length) {
-    tbody.innerHTML = '<tr><td colspan="3">No brokers yet.</td></tr>'; return;
+    tbody.innerHTML = '<tr><td colspan="5">No brokers yet.</td></tr>'; return;
   }
   tbody.innerHTML = brokers.map(b => `
     <tr>
-      <td>${b.fullName}</td>
+      <td><strong>${b.fullName}</strong></td>
       <td>${b.username}</td>
-      <td><span style="color:#a78bfa;font-weight:700;">${b.role}</span></td>
+      <td><span style="color:#a78bfa;">${b.department || 'General'}</span></td>
+      <td><span style="color:#93c5fd;font-weight:700;">${b.clientCount}</span> clients</td>
+      <td>
+        <button class="btn btn-gray" style="padding:5px 12px;font-size:12px;"
+          onclick="startEditBroker(${b.id},'${b.fullName}','${b.department||'General'}')">Edit</button>
+        <button class="btn btn-red" style="padding:5px 12px;font-size:12px;margin-left:6px;"
+          onclick="doDeleteBroker(${b.id},'${b.fullName}')">Delete</button>
+      </td>
     </tr>`).join('');
+
+  // Also populate reassign dropdowns
+  const clientSel  = document.getElementById('reassignClientSelect');
+  const brokerSel  = document.getElementById('reassignBrokerSelect');
+  brokerSel.innerHTML = '<option value="">Select new broker...</option>' +
+    brokers.map(b => `<option value="${b.id}">${b.fullName} (${b.username})</option>`).join('');
+
+  const clients = await get('/api/clients/approved');
+  clientSel.innerHTML = '<option value="">Select client...</option>' +
+    clients.map(c => {
+      const currentBroker = brokers.find(b => b.id === c.brokerId);
+      const brokerName = currentBroker ? ` → currently: ${currentBroker.fullName}` : '';
+      return `<option value="${c.userId}">${c.fullName} (${c.username})${brokerName}</option>`;
+    }).join('');
+}
+
+function startEditBroker(id, fullName, dept) {
+  editingBrokerId = id;
+  document.getElementById('editBFullName').value = fullName;
+  document.getElementById('editBDept').value     = dept;
+  clearMsg('editBrokerMsg');
+  document.getElementById('editBrokerForm').style.display = 'block';
+  document.getElementById('editBrokerForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditBroker() {
+  editingBrokerId = null;
+  document.getElementById('editBrokerForm').style.display = 'none';
+}
+
+async function confirmEditBroker() {
+  const fullName   = document.getElementById('editBFullName').value.trim();
+  const department = document.getElementById('editBDept').value.trim();
+  if (!fullName) { showMsg('editBrokerMsg', 'Full name is required.', false); return; }
+  const res = await post('/api/brokers/update', {
+    brokerId: editingBrokerId, fullName, department
+  });
+  showMsg('editBrokerMsg', res.message || res.error, res.success);
+  if (res.success) {
+    setTimeout(() => { cancelEditBroker(); loadBrokers(); loadStats(); }, 1500);
+  }
+}
+
+async function doDeleteBroker(brokerId, name) {
+  if (!confirm(`Delete broker "${name}"?\n\nTheir assigned clients will be unassigned and will need to be reassigned to another broker.`)) return;
+  const res = await post('/api/brokers/delete', { brokerId });
+  alert(res.message || res.error);
+  loadBrokers();
+  loadStats();
+}
+
+async function doReassign() {
+  const clientId = parseInt(document.getElementById('reassignClientSelect').value);
+  const brokerId = parseInt(document.getElementById('reassignBrokerSelect').value);
+  if (!clientId) { showMsg('reassignMsg', 'Select a client.', false); return; }
+  if (!brokerId) { showMsg('reassignMsg', 'Select a broker.', false); return; }
+  const res = await post('/api/clients/reassign', { clientId, brokerId });
+  showMsg('reassignMsg', res.message || res.error, res.success);
+  if (res.success) setTimeout(() => loadBrokers(), 1500);
 }
 
 async function createBroker() {

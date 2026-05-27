@@ -32,6 +32,14 @@ public interface BrokerCraftService extends Remote {
 
     List<ClientProfile> getClientsForBroker(int brokerId) throws RemoteException;
 
+    void deleteBroker(int brokerId) throws RemoteException;
+
+    void updateBroker(int brokerId, String fullName, String department) throws RemoteException;
+
+    void reassignClient(int clientId, int newBrokerId) throws RemoteException;
+
+    List<ClientProfile> getAllApprovedClients() throws RemoteException;
+
     List<Stock> getStocks() throws RemoteException;
 
     List<PortfolioItem> getPortfolio(int clientId) throws RemoteException;

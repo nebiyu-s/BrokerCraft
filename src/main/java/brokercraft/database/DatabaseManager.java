@@ -244,6 +244,63 @@ public class DatabaseManager {
         return profile;
     }
 
+    /** Delete a broker user and all related data (cascades via FK) */
+    public void deleteBroker(int brokerId) throws SQLException {
+        // First reassign any clients to no broker (remove assignment)
+        String unassign = "DELETE FROM assignments WHERE broker_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(unassign)) {
+            ps.setInt(1, brokerId);
+            ps.executeUpdate();
+        }
+        // Delete the user (cascades to brokers table)
+        String deleteUser = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(deleteUser)) {
+            ps.setInt(1, brokerId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Reassign a client from their current broker to a new broker */
+    public void reassignClient(int clientId, int newBrokerId) throws SQLException {
+        String sql = """
+                INSERT INTO assignments (client_id, broker_id) VALUES (?,?)
+                ON DUPLICATE KEY UPDATE broker_id=VALUES(broker_id), assigned_at=CURRENT_TIMESTAMP
+                """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, clientId);
+            ps.setInt(2, newBrokerId);
+            ps.executeUpdate();
+        }
+        // Also update the client profile cache
+        var profileOpt = findClientProfile(clientId);
+        if (profileOpt.isPresent()) {
+            ClientProfile profile = profileOpt.get();
+            profile.setAssignedBrokerId(newBrokerId);
+            saveClientProfile(profile);
+        }
+    }
+
+    /** Get all approved clients (for reassignment dropdown) */
+    public List<ClientProfile> findAllApprovedClients() throws SQLException {
+        String sql = """
+                SELECT c.user_id, c.email, c.balance, c.status, a.broker_id
+                FROM clients c
+                LEFT JOIN assignments a ON a.client_id = c.user_id
+                WHERE c.status = 'APPROVED'
+                ORDER BY c.user_id
+                """;
+        List<ClientProfile> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapClientProfile(rs));
+        }
+        return list;
+    }
+
     public Optional<BrokerProfile> findBrokerProfile(int userId) throws SQLException {
         String sql = "SELECT * FROM brokers WHERE user_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();

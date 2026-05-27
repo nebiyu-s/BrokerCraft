@@ -129,9 +129,39 @@ public class BrokerCraftServiceImpl extends UnicastRemoteObject implements Broke
     public List<ClientProfile> getClientsForBroker(int brokerId) throws RemoteException {
         try {
             return Db.query(() -> db.findClientsByBroker(brokerId));
-        } catch (Exception e) {
-            throw remote(e);
-        }
+        } catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void deleteBroker(int brokerId) throws RemoteException {
+        try { Db.execute(() -> db.deleteBroker(brokerId)); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void updateBroker(int brokerId, String fullName, String department) throws RemoteException {
+        try {
+            Db.execute(() -> {
+                var userOpt = db.findUserById(brokerId);
+                if (userOpt.isEmpty()) throw new IllegalArgumentException("Broker not found.");
+                User user = userOpt.get();
+                user.setFullName(fullName);
+                db.saveUser(user);
+                db.saveBrokerProfile(new brokercraft.model.BrokerProfile(brokerId, department));
+            });
+        } catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public void reassignClient(int clientId, int newBrokerId) throws RemoteException {
+        try { Db.execute(() -> db.reassignClient(clientId, newBrokerId)); }
+        catch (Exception e) { throw remote(e); }
+    }
+
+    @Override
+    public List<ClientProfile> getAllApprovedClients() throws RemoteException {
+        try { return Db.query(db::findAllApprovedClients); }
+        catch (Exception e) { throw remote(e); }
     }
 
     @Override
