@@ -667,13 +667,52 @@ async function doDeleteBroker(brokerId, name) {
 }
 
 async function doReassign() {
-  const clientId = parseInt(document.getElementById('reassignClientSelect').value);
-  const brokerId = parseInt(document.getElementById('reassignBrokerSelect').value);
+  const clientSel  = document.getElementById('reassignClientSelect');
+  const brokerSel  = document.getElementById('reassignBrokerSelect');
+  const clientId   = parseInt(clientSel.value);
+  const brokerId   = parseInt(brokerSel.value);
+
   if (!clientId) { showMsg('reassignMsg', 'Select a client.', false); return; }
   if (!brokerId) { showMsg('reassignMsg', 'Select a broker.', false); return; }
+
   const res = await post('/api/clients/reassign', { clientId, brokerId });
   showMsg('reassignMsg', res.message || res.error, res.success);
-  if (res.success) setTimeout(() => loadBrokers(), 1500);
+
+  if (res.success) {
+    // Update the client option label to show the new broker — do NOT reload dropdowns
+    const brokerName = brokerSel.options[brokerSel.selectedIndex].text;
+    const opt = clientSel.options[clientSel.selectedIndex];
+    // Strip old "→ currently: ..." part and replace with new broker
+    const baseName = opt.text.replace(/\s*→.*$/, '');
+    opt.text = baseName + ' → currently: ' + brokerName.split(' (')[0];
+
+    // Also refresh the broker client counts in the table after a short delay
+    setTimeout(() => {
+      // Only reload the broker table rows, not the dropdowns
+      reloadBrokerTableOnly();
+    }, 1500);
+  }
+}
+
+async function reloadBrokerTableOnly() {
+  const brokers = await get('/api/brokers');
+  const tbody = document.getElementById('brokersBody');
+  if (!brokers.length) {
+    tbody.innerHTML = '<tr><td colspan="5">No brokers yet.</td></tr>'; return;
+  }
+  tbody.innerHTML = brokers.map(b => `
+    <tr>
+      <td><strong>${b.fullName}</strong></td>
+      <td>${b.username}</td>
+      <td><span style="color:#a78bfa;">${b.department || 'General'}</span></td>
+      <td><span style="color:#93c5fd;font-weight:700;">${b.clientCount}</span> clients</td>
+      <td>
+        <button class="btn btn-gray" style="padding:5px 12px;font-size:12px;"
+          onclick="startEditBroker(${b.id},'${b.fullName}','${b.department||'General'}')">Edit</button>
+        <button class="btn btn-red" style="padding:5px 12px;font-size:12px;margin-left:6px;"
+          onclick="doDeleteBroker(${b.id},'${b.fullName}')">Delete</button>
+      </td>
+    </tr>`).join('');
 }
 
 async function createBroker() {
