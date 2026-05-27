@@ -40,6 +40,14 @@ public class RegisterController {
 
         try {
             BrokerCraftService service = SessionContext.getService();
+
+            // Guard: if service is null the app was opened without a server connection
+            if (service == null) {
+                showMsg(messageLabel,
+                        "Not connected to server. Please restart the app after starting the server.", false);
+                return;
+            }
+
             service.registerClient(username, password, fullName, email);
 
             // ── Success: clear all fields immediately ──

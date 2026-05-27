@@ -55,6 +55,13 @@ public class CompanyRegisterController {
 
         try {
             BrokerCraftService service = SessionContext.getService();
+
+            if (service == null) {
+                showMsg(messageLabel,
+                        "Not connected to server. Please restart the app after starting the server.", false);
+                return;
+            }
+
             service.registerCompany(username, password, companyName, email, description, industry);
 
             // Clear all fields

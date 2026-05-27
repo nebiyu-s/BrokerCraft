@@ -42,6 +42,13 @@ public class LoginController {
 
         try {
             BrokerCraftService service = SessionContext.getService();
+
+            if (service == null) {
+                StyleManager.setError(errorLabel,
+                        "Not connected to server. Start the server and restart the app.");
+                return;
+            }
+
             UserRole role = parseRole(roleCombo.getValue());
             User user = service.login(username, password, role);
 
