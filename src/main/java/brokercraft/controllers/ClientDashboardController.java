@@ -1,7 +1,16 @@
 package brokercraft.controllers;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import brokercraft.main.SceneRouter;
 import brokercraft.main.SessionContext;
+import brokercraft.model.IpoListing;
 import brokercraft.model.MarketStockRow;
 import brokercraft.model.PortfolioItem;
 import brokercraft.model.Stock;
@@ -21,10 +30,15 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class ClientDashboardController {
     @FXML private Label welcomeLabel;
@@ -41,6 +55,7 @@ public class ClientDashboardController {
     @FXML private Label estimateLabel;
     @FXML private Label selectedStockLabel;
     @FXML private Label portfolioSummaryLabel;
+    @FXML private Label portfolioSummaryLabel2;
     @FXML private TabPane mainTabs;
     @FXML private ListView<ChartHelper.AllocationSlice> allocationList;
     @FXML private TextField marketSearchField;
@@ -80,6 +95,21 @@ public class ClientDashboardController {
     @FXML private TextField quantityField;
     @FXML private Label tradeMessageLabel;
 
+    // ── IPO tab ───────────────────────────────────────────────────────────────
+    @FXML private TableView<IpoRow>              ipoTable;
+    @FXML private TableColumn<IpoRow, String>    ipoCompanyCol;
+    @FXML private TableColumn<IpoRow, String>    ipoSymbolCol;
+    @FXML private TableColumn<IpoRow, Number>    ipoSharesCol;
+    @FXML private TableColumn<IpoRow, Number>    ipoPriceCol;
+    @FXML private TableColumn<IpoRow, String>    ipoDeadlineCol;
+    @FXML private TableColumn<IpoRow, String>    ipoDescCol;
+    @FXML private ComboBox<String>               ipoSymbolCombo;
+    @FXML private TextField                      ipoQuantityField;
+    @FXML private Label                          ipoEstimateLabel;
+    @FXML private Label                          ipoMessageLabel;
+
+    private final ObservableList<IpoRow> ipoRows = FXCollections.observableArrayList();
+
     private final ObservableList<MarketStockRow> marketRows = FXCollections.observableArrayList();
     private final ObservableList<PortfolioRow> portfolioRows = FXCollections.observableArrayList();
     private final ObservableList<Transaction> allTransactions = FXCollections.observableArrayList();
@@ -103,6 +133,7 @@ public class ClientDashboardController {
         setupHistoryTable();
         setupFilters();
         setupTradePreview();
+        setupIpoTab();
 
         try {
             registerPriceListener();
@@ -378,6 +409,7 @@ public class ClientDashboardController {
         updateBrokerLabel();
         refreshPortfolio();
         refreshHistory();
+        refreshIpos();
         updateMetrics();
         footerStatusLabel.setText("Last sync: " + java.time.LocalTime.now().withNano(0));
     }
@@ -395,7 +427,9 @@ public class ClientDashboardController {
     private void updateBrokerLabel() throws Exception {
         var profile = service.getClientProfile(user.getId());
         if (profile != null && profile.getAssignedBrokerId() != null) {
-            brokerLabel.setText("#" + profile.getAssignedBrokerId());
+            // Show broker's actual name instead of just the ID
+            User broker = service.getUserById(profile.getAssignedBrokerId());
+            brokerLabel.setText(broker != null ? broker.getFullName() : "Broker #" + profile.getAssignedBrokerId());
         } else {
             brokerLabel.setText("Pending");
         }
@@ -485,6 +519,92 @@ public class ClientDashboardController {
         }
     }
 
+    // ── IPO tab ───────────────────────────────────────────────────────────────
+
+    private void setupIpoTab() {
+        ipoCompanyCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().companyName));
+        ipoSymbolCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().symbol));
+        ipoSharesCol.setCellValueFactory(c -> new SimpleIntegerProperty(c.getValue().sharesRemaining));
+        ipoPriceCol.setCellValueFactory(c -> new SimpleDoubleProperty(c.getValue().pricePerShare));
+        ipoDeadlineCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().deadline));
+        ipoDescCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().description));
+        StyleManager.styleTable(ipoTable);
+        ipoTable.setItems(ipoRows);
+
+        // Click IPO row → auto-fill symbol combo
+        ipoTable.getSelectionModel().selectedItemProperty().addListener((o, old, row) -> {
+            if (row != null) {
+                ipoSymbolCombo.setValue(row.symbol);
+                updateIpoEstimate();
+            }
+        });
+
+        ipoSymbolCombo.valueProperty().addListener((o, a, b) -> updateIpoEstimate());
+        ipoQuantityField.textProperty().addListener((o, a, b) -> updateIpoEstimate());
+    }
+
+    private void refreshIpos() throws Exception {
+        List<IpoListing> openIpos = service.getOpenIpos();
+        ipoRows.clear();
+        List<String> symbols = new ArrayList<>();
+        for (IpoListing ipo : openIpos) {
+            ipoRows.add(new IpoRow(ipo));
+            symbols.add(ipo.getSymbol());
+        }
+        ipoSymbolCombo.setItems(FXCollections.observableArrayList(symbols));
+        if (!symbols.isEmpty() && ipoSymbolCombo.getValue() == null) {
+            ipoSymbolCombo.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void updateIpoEstimate() {
+        String sym = ipoSymbolCombo.getValue();
+        if (sym == null) { ipoEstimateLabel.setText(""); return; }
+        ipoRows.stream().filter(r -> r.symbol.equals(sym)).findFirst().ifPresent(row -> {
+            try {
+                int qty = Integer.parseInt(ipoQuantityField.getText().trim());
+                double total = row.pricePerShare * qty;
+                ipoEstimateLabel.setText(qty + " × " + StyleManager.formatCurrency(row.pricePerShare)
+                        + " = " + StyleManager.formatCurrency(total));
+            } catch (Exception e) {
+                ipoEstimateLabel.setText("IPO price: " + StyleManager.formatCurrency(row.pricePerShare) + " / share");
+            }
+        });
+    }
+
+    @FXML
+    private void onBuyIpo() {
+        String sym = ipoSymbolCombo.getValue();
+        if (sym == null || sym.isBlank()) {
+            StyleManager.setError(ipoMessageLabel, "Select an IPO symbol.");
+            return;
+        }
+        int qty;
+        try {
+            qty = Integer.parseInt(ipoQuantityField.getText().trim());
+            if (qty <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            StyleManager.setError(ipoMessageLabel, "Enter a valid positive quantity.");
+            return;
+        }
+        try {
+            String result = service.buyIpoShares(user.getId(), sym, qty);
+            if ("SUCCESS".equals(result)) {
+                StyleManager.setSuccess(ipoMessageLabel,
+                        "Bought " + qty + " IPO shares of " + sym + " successfully.");
+                ipoQuantityField.clear();
+                refreshIpos();
+                refreshPortfolio();
+                refreshHistory();
+                updateMetrics();
+            } else {
+                StyleManager.setError(ipoMessageLabel, result);
+            }
+        } catch (Exception e) {
+            StyleManager.setError(ipoMessageLabel, e.getMessage());
+        }
+    }
+
     @FXML
     private void onLogout() throws Exception {
         if (clock != null) clock.stop();
@@ -495,8 +615,7 @@ public class ClientDashboardController {
         SceneRouter.goTo("Login.fxml", "BrokerCraft", 1100, 680);
     }
 
-    public static class PortfolioRow {
-        private final SimpleStringProperty symbol = new SimpleStringProperty();
+    public static class PortfolioRow {        private final SimpleStringProperty symbol = new SimpleStringProperty();
         private final SimpleIntegerProperty quantity = new SimpleIntegerProperty();
         private final SimpleDoubleProperty averagePrice = new SimpleDoubleProperty();
         private final SimpleDoubleProperty marketPrice = new SimpleDoubleProperty();
@@ -518,5 +637,32 @@ public class ClientDashboardController {
         public double getMarketPrice() { return marketPrice.get(); }
         public double getMarketValue() { return marketValue.get(); }
         public double getPnl() { return pnl.get(); }
+    }
+
+    // ── IPO row model ─────────────────────────────────────────────────────────
+
+    public static class IpoRow {
+        final String symbol;
+        final String companyName;
+        final int    sharesRemaining;
+        final double pricePerShare;
+        final String deadline;
+        final String description;
+
+        IpoRow(IpoListing ipo) {
+            this.symbol          = ipo.getSymbol();
+            this.companyName     = ipo.getCompanyName();
+            this.sharesRemaining = ipo.getSharesRemaining();
+            this.pricePerShare   = ipo.getPricePerShare();
+            this.deadline        = ipo.getDeadline().toString();
+            this.description     = ipo.getDescription() != null ? ipo.getDescription() : "";
+        }
+
+        public String getSymbol()          { return symbol; }
+        public String getCompanyName()     { return companyName; }
+        public int    getSharesRemaining() { return sharesRemaining; }
+        public double getPricePerShare()   { return pricePerShare; }
+        public String getDeadline()        { return deadline; }
+        public String getDescription()     { return description; }
     }
 }
