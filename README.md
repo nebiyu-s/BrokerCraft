@@ -1,780 +1,308 @@
 # BrokerCraft
 
-## A Real-Time Multi-User Stock Brokerage Management System Using JavaFX, RMI, Multithreading, and Database Integration
+## A Real-Time Multi-User Stock Brokerage & IPO Platform
+
+Built with **Java 17 · JavaFX 21 · Java RMI · MySQL · Javalin (Web)**
 
 ---
 
-# Project Overview
+## Project Overview
 
-BrokerCraft is a distributed client-server stock brokerage management platform developed using JavaFX and advanced Java programming concepts. The system simulates the workflow of a real-world brokerage company where Clients can trade stocks, Brokers can manage assigned clients and execute trades, and the Admin controls and monitors the entire platform.
+BrokerCraft is a distributed client-server stock brokerage and IPO management platform. It simulates a real-world financial ecosystem where:
 
-The application integrates:
+- **Companies** raise capital by listing shares through an IPO process
+- **Clients** invest by buying IPO shares and trading on the live market
+- **Brokers** manage assigned clients and execute trades on their behalf
+- **Admin** controls the entire platform through a web-based dashboard
 
-* JavaFX GUI development
-* Event-driven programming
-* Java RMI communication
-* TCP Socket programming
-* Multithreading and synchronization
-* Database CRUD operations
-* File handling and logging
-* Object serialization
-* Real-time stock market simulation
-
-The system demonstrates how enterprise financial platforms handle concurrent users, transactions, market updates, and role-based access control.
+The system demonstrates enterprise-level Java architecture including distributed computing, concurrent transaction processing, real-time market simulation, and role-based access control.
 
 ---
 
-#  Real-World Inspiration
+## Architecture
 
-BrokerCraft is inspired by modern brokerage systems such as:
-
-* Robinhood
-* Fidelity
-* E*TRADE
-* Traditional brokerage firms
-
-The project simulates both:
-
-* Self-service investing (Client trades independently)
-* Broker-assisted investing (Broker executes trades for clients)
-
-This creates a more realistic financial ecosystem.
-
----
-
-# main Objectives
-
-The project aims to:
-
-* Simulate a real brokerage workflow
-* Demonstrate distributed systems using RMI
-* Implement concurrent transaction processing
-* Provide real-time market updates
-* Demonstrate synchronization and thread safety
-* Implement role-based dashboards
-* Showcase enterprise-level Java architecture
-* Simulate stock trading and portfolio management
-
----
-
-# User Roles
-
-# 1. Admin
-
-The Admin represents the owner or manager of the brokerage company.
-
-Admin responsibilities:
-
-* Create Broker accounts
-* Approve Client registrations
-* Assign Clients to Brokers
-* Monitor all transactions
-* Start and stop price simulation
-* View active users
-* Manage system operations
-* Monitor overall trading activities
-
----
-
-# 2. Broker
-
-The Broker represents an employee or financial advisor.
-
-Broker responsibilities:
-
-* Manage assigned clients
-* Monitor client portfolios
-* Execute trades for clients
-* View live market prices
-* Monitor transaction activity
-
-Each Broker can only access their assigned clients.
-
----
-
-# 3. Client
-
-The Client represents a customer or investor.
-
-Client responsibilities:
-
-* Register on the platform
-* Buy and sell shares
-* View portfolio
-* Monitor stock prices
-* View transaction history
-* Manage investments
-
----
-
-# 🔐 Authentication & Registration Workflow
-
-# Broker Registration Flow
-
-Only Admin can create Broker accounts.
-
-Workflow:
-
-```text
-Admin Login
-    ↓
-Manage Brokers
-    ↓
-Create Broker Account
-    ↓
-Broker Becomes Active
+```
+┌─────────────────────────────────────────────────────────┐
+│                    BrokerCraft Server                    │
+│                                                         │
+│   RMI Registry (port 1099)   HTTP Server (port 7000)   │
+│          ↓                          ↓                   │
+│   BrokerCraftServiceImpl      AdminWebServer            │
+│          ↓                          ↓                   │
+│      DatabaseManager ←──────── IpoService               │
+│          ↓                     AuthService              │
+│        MySQL                   PriceSimulator           │
+└─────────────────────────────────────────────────────────┘
+         ↑                              ↑
+   JavaFX Clients                  Browser (Admin)
+  (Broker / Client /              http://localhost:7000/admin
+   Company apps)
 ```
 
-This is realistic because Brokers are employees of the company.
+Two services run in the same server process:
+- **RMI (port 1099)** — used by JavaFX desktop apps (Broker, Client, Company)
+- **HTTP (port 7000)** — used by the Admin web dashboard in a browser
 
 ---
 
-# Client Registration Flow
+## User Roles
 
-Clients register by themselves but require Admin approval.
+### Admin (Web Browser Dashboard)
+- Accessed at `http://localhost:7000/admin`
+- Login with admin credentials (default: `admin` / `admin123`)
+- **Broker management:** create, edit, delete brokers, reset passwords
+- **Client management:** approve/reject registrations, assign brokers, reassign, suspend, delete
+- **Company management:** approve/reject company registrations, suspend companies
+- **IPO management:** approve/reject IPO listings (approved IPOs go live on the market instantly)
+- **Market control:** start/stop price simulation
+- **Monitoring:** live stock prices, all transactions, active sessions
 
-Workflow:
+### Broker (JavaFX Desktop App)
+- Login with role = Broker
+- **Client book:** see all assigned clients, search by name
+- **Client details:** view selected client's email, cash balance, total AUM
+- **Client holdings:** portfolio table with Symbol, Shares, Avg Cost, Market Price, Value, P/L
+- **Execute trades:** buy or sell stocks on behalf of any assigned client (requires confirmation checkbox)
+- **Client history:** per-client transaction history with BUY/SELL filter
+- **All activity:** combined transaction feed across all assigned clients
 
-```text
-Client Opens Application
-    ↓
-Clicks Register
-    ↓
-Fills Registration Form
-    ↓
-Status = Pending
-    ↓
-Admin Reviews Request
-    ↓
-Admin Approves Client
-    ↓
-Admin Assigns Broker
-    ↓
-Client Becomes Active
+### Client (JavaFX Desktop App)
+- Register via the app → wait for admin approval → login
+- **Overview:** portfolio allocation, top movers, insight message
+- **Market:** live prices with search, sort, change %, trend indicator
+- **Portfolio:** holdings with Avg Cost, Market Price, Value, P/L (color-coded)
+- **Trade:** buy/sell stocks at live prices with order preview
+- **IPO Market:** buy shares from open IPO listings at fixed IPO price
+- **History:** full transaction ledger with BUY/SELL filter and symbol search
+
+### Company (JavaFX Desktop App)
+- Register via the app → wait for admin approval → login
+- **My IPOs:** view all submitted IPOs with status (PENDING/OPEN/CLOSED/REJECTED), shares sold %, capital raised
+- **Submit IPO:** list shares for public offering (symbol, quantity, price per share, deadline, description)
+- After admin approves → stock appears on the live market → clients can buy shares
+
+---
+
+## IPO Lifecycle
+
 ```
-
----
-
-# 🔗 Broker Assignment Workflow
-
-Every Client is assigned to exactly one Broker.
-
-Relationship:
-
-```text
-One Broker → Many Clients
-One Client → One Broker
-```
-
-Workflow:
-
-```text
-Client Registers
-    ↓
-Admin Reviews Request
-    ↓
-Admin Selects Broker
-    ↓
-Assignment Saved in Database
-    ↓
-Broker Can Now Access Client
-```
-
-This makes the system realistic and demonstrates access control.
-
----
-
-# 🖥️ Full System Workflow
-
-# Step 1 — Server Startup
-
-The Server application starts first.
-
-Server responsibilities:
-
-* Start RMI Registry
-* Connect to database
-* Initialize stock market data
-* Start background services
-* Start price simulation thread
-* Listen for client connections
-
-Workflow:
-
-```text
-Start Server
-    ↓
-Initialize Database
-    ↓
-Start RMI Registry
-    ↓
-Load Stocks
-    ↓
-Start Price Simulation Thread
-    ↓
-Wait For Client Connections
-```
-
----
-
-# Step 2 — Admin Login
-
-Admin logs into the platform.
-
-Admin Dashboard loads:
-
-* System monitor
-* User management
-* Broker management
-* Pending registrations
-* Market controls
-* Live transactions
-
-Admin can:
-
-* Create Brokers
-* Approve Clients
-* Assign Brokers
-* Start/stop simulation
-* Monitor everything
-
----
-
-# Step 3 — Broker Login
-
-Broker logs into the system.
-
-Broker Dashboard loads:
-
-* Assigned client list
-* Portfolio management
-* Live prices
-* Trade execution panel
-* Transaction monitoring
-
-Broker only sees assigned clients.
-
----
-
-# Step 4 — Client Login
-
-Client logs into the platform.
-
-Client Dashboard loads:
-
-* Live market prices
-* Portfolio table
-* Balance display
-* Buy/Sell controls
-* Transaction history
-* Assigned broker information
-
----
-
-# Stock Price Simulation Workflow
-
-The system includes a real-time market simulator.
-
-A background thread continuously updates stock prices.
-
-Example stocks:
-
-* ETHIO
-* DASHEN
-* AWASH
-* HIBRET
-* COMBANK
-
-Workflow:
-
-```text
-Price Thread Starts
-    ↓
-Every 3 Seconds:
-    ↓
-Generate Random Price Change
-    ↓
-Update Shared Stock Data
-    ↓
-Notify Connected Clients
-    ↓
-Refresh JavaFX Tables Automatically
-```
-
----
-
-# Multithreading Architecture
-
-BrokerCraft heavily uses Threads.
-
-Main threads:
-
-| Thread                     | Purpose                  |
-| -------------------------- | ------------------------ |
-| Price Simulation Thread    | Updates market prices    |
-| Client Connection Threads  | Handle multiple users    |
-| Transaction Threads        | Process trades           |
-| Background Database Thread | Save data asynchronously |
-| UI Thread (JavaFX Thread)  | GUI rendering            |
-
----
-
-# Synchronization Workflow
-
-Synchronization prevents race conditions.
-
-Example problem:
-
-Two users try to buy shares at the same time.
-
-Without synchronization:
-
-* balance corruption
-* inconsistent portfolios
-* invalid transactions
-
-Solution:
-
-```text
-Transaction Request
-    ↓
-Acquire Lock
-    ↓
-Validate Balance
-    ↓
-Update Portfolio
-    ↓
-Update Database
-    ↓
-Release Lock
-```
-
-This ensures thread-safe operations.
-
----
-
-# Complete Buy Transaction Workflow
-
-# Example Scenario
-
-Client Abel buys 100 ETHIO shares.
-
----
-
-# Step-by-Step Technical Flow
-
-## 1. GUI Interaction
-
-Abel:
-
-* selects ETHIO
-* enters quantity
-* clicks Buy
-
-JavaFX EventHandler captures the action.
-
----
-
-## 2. Request Sent to Server
-
-Client application sends BuyRequest object using RMI.
-
-Example:
-
-```text
-Client → RMI → Server
-```
-
----
-
-## 3. Server Validation
-
-Server checks:
-
-* client authentication
-* sufficient balance
-* current stock price
-* market availability
-
----
-
-## 4. Synchronization Lock
-
-Server locks the client account to avoid concurrent modification.
-
----
-
-## 5. Transaction Processing
-
-Server:
-
-* deducts balance
-* adds shares to portfolio
-* creates transaction object
-
----
-
-## 6. Database Update
-
-Database saves:
-
-* updated balance
-* updated portfolio
-* transaction history
-
----
-
-## 7. File Logging
-
-Transaction is written to log file.
-
-Example:
-
-```text
-[12:45 PM] Abel bought 100 ETHIO shares at 250 ETB
-```
-
----
-
-## 8. Response Returned
-
-Server sends success response.
-
----
-
-## 9. GUI Updates Automatically
-
-Client dashboard refreshes:
-
-* new balance
-* updated portfolio
-* transaction history
-
----
-
-# Real-Time Update Workflow
-
-After several seconds:
-
-ETHIO price changes from:
-
-```text
-250 ETB → 265 ETB
-```
-
-The system:
-
-```text
-Price Thread Updates Price
-    ↓
-Server Broadcasts Update
-    ↓
-Broker & Clients Receive Notification
-    ↓
-JavaFX Tables Refresh Automatically
-```
-
-No manual refresh required.
-
----
-
-# Client-Server Communication
-
-# Communication Model
-
-```text
-Client Applications
+Company submits IPO
         ↓
-    Java RMI
+   Status = PENDING
         ↓
-BrokerCraft Server
+Admin reviews in web dashboard
         ↓
-Database + File System
-```
-
-The server acts as the central authority.
-
-All clients communicate only with the server.
-
----
-
-# JavaFX GUI Design
-
-# Login Screen
-
-Components:
-
-* Username field
-* Password field
-* Role selection ComboBox
-* Login button
-* Register button
-* Error message label
-
-Design style:
-
-* Modern financial theme
-* Dark mode dashboard colors
-* Professional gradients
-* Rounded controls
-* Smooth hover effects
-
----
-
-# Client Dashboard
-
-Sections:
-
-```text
-Top Navigation Bar
-    ↓
-Live Market Prices Table
-    ↓
-Portfolio Table
-    ↓
-Transaction History
-    ↓
-Buy/Sell Panel
-```
-
-Features:
-
-* Real-time updates
-* TableView integration
-* Dynamic labels
-* ObservableList binding
-
----
-
-# Broker Dashboard
-
-Sections:
-
-```text
-Assigned Clients Panel
-    ↓
-Client Portfolio Viewer
-    ↓
-Trade Execution Panel
-    ↓
-Live Transactions Feed
+   Admin approves
+        ↓
+   Status = OPEN
+   Stock added to live market
+        ↓
+Clients buy IPO shares at fixed price
+   Company receives capital
+   Client receives shares in portfolio
+        ↓
+All shares sold OR deadline passed
+        ↓
+   Status = CLOSED
+        ↓
+Stock continues trading on secondary market
+   Price fluctuates with simulation
+   Clients can buy/sell freely
 ```
 
 ---
 
-# Admin Dashboard
+## Price Simulation
 
-Sections:
+Prices update every **3 seconds** using **Geometric Brownian Motion** — the same mathematical model used in real financial markets.
 
-```text
-System Monitor
-    ↓
-Pending Registrations
-    ↓
-Broker Management
-    ↓
-Live Market Controls
-    ↓
-Analytics & Statistics
+```
+new_price = current_price × exp(drift + volatility × gaussian_noise + momentum)
+```
+
+Parameters:
+| Parameter | Value | Meaning |
+|---|---|---|
+| Volatility | 0.3% per tick | ~29% annual volatility (emerging market) |
+| Drift | +0.005% per tick | Slight upward market bias |
+| Momentum | 15% carry-over | Prices trend briefly, not pure noise |
+| Floor | 20% of start price | Stock cannot collapse to zero |
+| Ceiling | 400% of start price | Stock cannot go to infinity |
+
+Simulation **starts automatically** when the server boots. Admin can stop/restart from the web dashboard.
+
+---
+
+## Database Schema
+
+| Table | Purpose |
+|---|---|
+| `users` | Login credentials for all roles (ADMIN, BROKER, CLIENT, COMPANY) |
+| `brokers` | Broker department info |
+| `clients` | Client email, balance, approval status |
+| `assignments` | Maps each client to exactly one broker |
+| `stocks` | Live market stock data (updated by price simulator) |
+| `portfolios` | Client holdings (symbol, quantity, average cost) |
+| `transactions` | Full trade history with timestamps |
+| `companies` | Company profile, industry, approval status |
+| `ipo_listings` | IPO details: symbol, shares, price, deadline, status |
+
+---
+
+## Setup & Running
+
+### Requirements
+- Java 17+
+- XAMPP (MySQL on port 3306)
+- Gradle (included via wrapper)
+
+### 1. Database Setup
+
+Start XAMPP → start MySQL → open phpMyAdmin → run `database/schema.sql`
+
+Or run the additional tables if upgrading:
+```sql
+ALTER TABLE users MODIFY COLUMN role ENUM('ADMIN','BROKER','CLIENT','COMPANY') NOT NULL;
+
+CREATE TABLE IF NOT EXISTS companies (
+    user_id INT PRIMARY KEY, email VARCHAR(120) NOT NULL,
+    description TEXT, industry VARCHAR(100) NOT NULL DEFAULT 'General',
+    status ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ipo_listings (
+    id INT AUTO_INCREMENT PRIMARY KEY, company_id INT NOT NULL,
+    symbol VARCHAR(20) NOT NULL UNIQUE, company_name VARCHAR(120) NOT NULL,
+    shares_offered INT NOT NULL, shares_remaining INT NOT NULL,
+    price_per_share DECIMAL(15,2) NOT NULL, description TEXT,
+    deadline DATE NOT NULL,
+    status ENUM('PENDING','OPEN','CLOSED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+```
+
+### 2. Database Credentials
+
+Copy `src/main/resources/db.properties.example` to `src/main/resources/db.properties`:
+```properties
+jdbc.url=jdbc:mysql://localhost:3306/BrokerCraft?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+jdbc.user=root
+jdbc.password=
+```
+
+### 3. Start the Server
+```bash
+./gradlew runServer
+```
+Expected output:
+```
+Connected to MySQL database: BrokerCraft
+Price simulation started automatically.
+RMI registry started on port 1099
+Admin web dashboard → http://localhost:7000/admin
+BrokerCraft server is running.
+```
+
+### 4. Start the JavaFX Client
+```bash
+./gradlew run
+```
+
+### 5. Admin Dashboard
+Open browser: `http://localhost:7000/admin`
+Login: `admin` / `admin123`
+
+---
+
+## Default Credentials
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Broker | Created by admin | Set by admin |
+| Client | Self-registered | Set during registration |
+| Company | Self-registered | Set during registration |
+
+---
+
+## Seed Data
+
+5 Ethiopian market stocks pre-loaded:
+
+| Symbol | Company | Starting Price |
+|---|---|---|
+| ETHIO | Ethiopian Insurance | 250.00 ETB |
+| DASHEN | Dashen Bank | 890.00 ETB |
+| AWASH | Awash Bank | 620.00 ETB |
+| HIBRET | Hibret Bank | 410.00 ETB |
+| COMBANK | Commercial Bank | 1,200.00 ETB |
+
+New clients start with **100,000 ETB** balance.
+
+---
+
+## Key Technical Concepts Demonstrated
+
+| Concept | Implementation |
+|---|---|
+| Distributed Systems | Java RMI for client-server communication |
+| Concurrent Programming | ReentrantLock per client for thread-safe trades |
+| Real-Time Systems | RMI callbacks push price updates to all connected clients |
+| Event-Driven Programming | JavaFX ObservableList + listeners for live UI updates |
+| Financial Modeling | Geometric Brownian Motion for realistic price simulation |
+| Role-Based Access Control | 4 distinct roles with separate dashboards and permissions |
+| Web + Desktop Hybrid | Admin uses browser (Javalin HTTP), others use JavaFX |
+| Database Integration | MySQL with parameterized queries, transactions, batch operations |
+| File Logging | Every trade appended to `logs/transactions.log` |
+| Object Serialization | All model classes implement Serializable for RMI transport |
+
+---
+
+## Package Structure
+
+```
+src/main/java/brokercraft/
+├── controllers/        JavaFX controllers (Login, Register, Broker, Client, Company)
+├── database/           DatabaseManager, DatabaseConnection, Db utility
+├── main/               Main, ServerMain, SceneRouter, SessionContext
+├── model/              User, Stock, Transaction, Portfolio, IpoListing, CompanyProfile...
+├── network/            RMIClient, ClientPriceListener
+├── rmi/                BrokerCraftService (interface), BrokerCraftServiceImpl, RMIServer
+├── service/            AuthService, TransactionService, IpoService
+├── simulation/         PriceSimulator (Geometric Brownian Motion)
+├── synchronization/    TransactionLockManager (per-client ReentrantLock)
+├── utils/              StyleManager, ChartHelper, TransactionLogger, UiClock
+└── web/                AdminWebServer, AdminHtmlPage (Javalin HTTP + HTML dashboard)
 ```
 
 ---
 
-# Recommended Package Structure
+## Transaction Flow (Buy Example)
 
-```text
-src/
-├── admin/
-├── broker/
-├── client/
-├── controllers/
-├── database/
-├── gui/
-├── model/
-├── network/
-├── rmi/
-├── service/
-├── simulation/
-├── synchronization/
-├── threads/
-├── utils/
-└── main/
 ```
-
----
-
-# 🧩 Core Classes
-
-| Class             | Responsibility            |
-| ----------------- | ------------------------- |
-| User              | Base user information     |
-| Client            | Client data and portfolio |
-| Broker            | Broker operations         |
-| Admin             | Administrative operations |
-| Stock             | Market stock information  |
-| Portfolio         | User holdings             |
-| Transaction       | Trade information         |
-| PriceSimulator    | Real-time price updates   |
-| DatabaseManager   | CRUD operations           |
-| RMIServer         | Remote communication      |
-| TransactionLogger | File logging              |
-
----
-
-# Database Design
-
-Main tables:
-
-| Table        | Purpose                  |
-| ------------ | ------------------------ |
-| users        | Stores login information |
-| clients      | Client details           |
-| brokers      | Broker details           |
-| stocks       | Market stock data        |
-| portfolios   | Client holdings          |
-| transactions | Trade history            |
-| assignments  | Broker-client mapping    |
-
----
-
-# File Handling
-
-The project uses file handling for:
-
-* transaction logs
-* backups
-* serialized objects
-* reports
-
----
-
-# Collections Framework Usage
-
-Collections used:
-
-| Collection | Usage             |
-| ---------- | ----------------- |
-| ArrayList  | Stock lists       |
-| HashMap    | User sessions     |
-| Queue      | Transaction queue |
-| Set        | Active users      |
-
----
-
-# RMI Usage
-
-RMI is used for:
-
-* login requests
-* buy/sell requests
-* market updates
-* portfolio retrieval
-* transaction synchronization
-
----
-
-# Testing Areas
-
-The system should be tested for:
-
-* concurrent transactions
-* synchronization correctness
-* database consistency
-* RMI communication
-* GUI responsiveness
-* role permissions
-* market simulation accuracy
-
----
-
-# Educational Simplifications
-
-Compared to real brokerage systems:
-
-* prices are simulated
-* no real exchange connection exists
-* simplified security model
-* no advanced matching engine
-* no regulatory compliance
-
-These simplifications keep the project manageable while still demonstrating advanced programming concepts.
-
----
-
-# suggested Development Order
-
-# Phase 1
-
-Create database and models.
-
----
-
-# Phase 2
-
-Build server and RMI architecture.
-
----
-
-# Phase 3
-
-Implement authentication and registration.
-
----
-
-# Phase 4
-
-Build JavaFX dashboards.
-
----
-
-# Phase 5
-
-Implement stock simulation threads.
-
----
-
-# Phase 6
-
-Implement transaction processing.
-
----
-
-# Phase 7
-
-Add synchronization and validation.
-
----
-
-# Phase 8
-
-Add logging, reports, and analytics.
-
----
-
-# Phase 9
-
-Optimize UI and performance.
-
----
-
-#  Concepts Demonstrated
-
-BrokerCraft demonstrates:
-
-* Object-Oriented Programming
-* Distributed Systems
-* Concurrent Programming
-* Event-Driven Programming
-* Client-Server Architecture
-* Database Integration
-* Network Communication
-* Real-Time Systems
-* Role-Based Access Control
-
----
-
-# Final Summary
-
-BrokerCraft is a comprehensive distributed brokerage simulation platform that integrates JavaFX GUI development, multithreading, synchronization, RMI communication, database persistence, and real-time market simulation into one enterprise-style application.
-
-The project demonstrates how real brokerage systems coordinate multiple users, concurrent transactions, live market updates, and secure role-based operations while maintaining responsiveness, consistency, and scalability.
+Client clicks BUY (50 AWASH shares)
+        ↓
+JavaFX → RMI call → BrokerCraftServiceImpl.executeTrade()
+        ↓
+TransactionService.executeTrade()
+        ↓
+TransactionLockManager.getLock(clientId).lock()   ← thread safety
+        ↓
+Validate: balance >= 50 × current_price?
+        ↓
+Deduct balance from clients table
+        ↓
+Add 50 AWASH to portfolios table (update avg cost)
+        ↓
+Insert row into transactions table
+        ↓
+TransactionLogger.log() → append to logs/transactions.log
+        ↓
+lock.unlock()
+        ↓
+Return "SUCCESS" to client
+        ↓
+JavaFX refreshes portfolio, balance, history
+```
