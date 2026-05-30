@@ -38,12 +38,15 @@ public class AdminWebServer {
 
     public static final int PORT = 7000;
 
-    // Gson with LocalDateTime support for JSON serialization
+    // Gson with LocalDateTime and LocalDate support for JSON serialization
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class,
                     (com.google.gson.JsonSerializer<LocalDateTime>) (src, type, ctx) ->
                             new com.google.gson.JsonPrimitive(
                                     src.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
+            .registerTypeAdapter(java.time.LocalDate.class,
+                    (com.google.gson.JsonSerializer<java.time.LocalDate>) (src, type, ctx) ->
+                            new com.google.gson.JsonPrimitive(src.toString()))
             .create();
 
     private final DatabaseManager db = DatabaseManager.getInstance();
@@ -492,12 +495,20 @@ public class AdminWebServer {
 
     /** GET /api/ipos/pending */
     private void getPendingIpos(Context ctx) {
-        ctx.json(GSON.toJson(ipoService.getPendingIpos()));
+        try {
+            ctx.json(GSON.toJson(ipoService.getPendingIpos()));
+        } catch (Exception e) {
+            ctx.status(500).json(error(e.getMessage()));
+        }
     }
 
     /** GET /api/ipos/all */
     private void getAllIpos(Context ctx) {
-        ctx.json(GSON.toJson(ipoService.getAllIpos()));
+        try {
+            ctx.json(GSON.toJson(ipoService.getAllIpos()));
+        } catch (Exception e) {
+            ctx.status(500).json(error(e.getMessage()));
+        }
     }
 
     /** POST /api/ipos/approve — body: {ipoId} */

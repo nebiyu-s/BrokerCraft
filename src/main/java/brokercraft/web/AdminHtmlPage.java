@@ -944,7 +944,11 @@ async function toggleCompany(companyId) {
 // ════════════════════════════════════════
 async function loadIpos() {
   // Pending IPOs (need approval)
-  const pending = await get('/api/ipos/pending');
+  let pending = [];
+  let all = [];
+  try { pending = await get('/api/ipos/pending'); } catch(e) { pending = []; }
+  try { all     = await get('/api/ipos/all');     } catch(e) { all = []; }
+
   const pendingTbody = document.getElementById('iposBody');
   if (!pending.length) {
     pendingTbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No pending IPOs.</td></tr>';
@@ -953,9 +957,9 @@ async function loadIpos() {
       <tr>
         <td><strong>${i.companyName}</strong></td>
         <td style="color:#93c5fd;font-weight:700;">${i.symbol}</td>
-        <td>${i.sharesOffered.toLocaleString()}</td>
-        <td>${i.pricePerShare.toFixed(2)} ETB</td>
-        <td>${i.deadline}</td>
+        <td>${(i.sharesOffered||0).toLocaleString()}</td>
+        <td>${(i.pricePerShare||0).toFixed(2)} ETB</td>
+        <td>${i.deadline || ''}</td>
         <td style="color:#94a3b8;font-size:12px;">${i.description || '—'}</td>
         <td>
           <button class="btn btn-green" style="padding:5px 12px;font-size:12px;"
@@ -966,8 +970,6 @@ async function loadIpos() {
       </tr>`).join('');
   }
 
-  // All IPOs overview
-  const all = await get('/api/ipos/all');
   const allTbody = document.getElementById('allIposBody');
   if (!all.length) {
     allTbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No IPOs yet.</td></tr>';
@@ -977,10 +979,10 @@ async function loadIpos() {
       return `<tr>
         <td>${i.companyName}</td>
         <td><strong>${i.symbol}</strong></td>
-        <td>${i.sharesOffered.toLocaleString()}</td>
-        <td>${i.sharesRemaining.toLocaleString()}</td>
-        <td>${i.pricePerShare.toFixed(2)} ETB</td>
-        <td>${i.deadline}</td>
+        <td>${(i.sharesOffered||0).toLocaleString()}</td>
+        <td>${(i.sharesRemaining||0).toLocaleString()}</td>
+        <td>${(i.pricePerShare||0).toFixed(2)} ETB</td>
+        <td>${i.deadline || ''}</td>
         <td><span style="color:${statusColor};font-weight:700;">${i.status}</span></td>
       </tr>`;
     }).join('');
