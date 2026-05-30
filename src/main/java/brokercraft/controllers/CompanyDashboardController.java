@@ -198,7 +198,13 @@ public class CompanyDashboardController {
             refresh();
 
         } catch (Exception e) {
-            StyleManager.setError(ipoMessageLabel, e.getMessage());
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("nested exception is:")) {
+                int idx = msg.lastIndexOf("nested exception is:");
+                msg = msg.substring(idx + "nested exception is:".length()).trim();
+                if (msg.contains(":")) msg = msg.substring(msg.indexOf(":") + 1).trim();
+            }
+            showMsg(ipoMessageLabel, msg != null ? msg : "Submission failed.", false);
         }
     }
 
@@ -206,6 +212,11 @@ public class CompanyDashboardController {
     private void onRefresh() {
         try { refresh(); }
         catch (Exception e) { StyleManager.setError(ipoMessageLabel, e.getMessage()); }
+    }
+
+    private void showMsg(Label label, String text, boolean success) {
+        if (success) StyleManager.setSuccess(label, text);
+        else         StyleManager.setError(label, text);
     }
 
     @FXML

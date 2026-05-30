@@ -91,7 +91,7 @@
                         <TextField fx:id="priceField" promptText="e.g. 500.00" maxWidth="Infinity"/>
 
                         <Label text="IPO DEADLINE" styleClass="field-label"/>
-                        <TextField fx:id="deadlineField" promptText="YYYY-MM-DD  e.g. 2026-12-31"
+                        <TextField fx:id="deadlineField" promptText="YYYY-MM-DD  e.g. 2026-12-31  (use two digits for month and day)"
                                    maxWidth="Infinity"/>
 
                         <Label text="DESCRIPTION" styleClass="field-label"/>

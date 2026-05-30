@@ -314,7 +314,15 @@ public class BrokerCraftServiceImpl extends UnicastRemoteObject implements Broke
                                 double pricePerShare, String description,
                                 String deadline) throws RemoteException {
         try {
-            java.time.LocalDate date = java.time.LocalDate.parse(deadline);
+            // Accept both YYYY-MM-DD and YYYY-M-D formats
+            java.time.LocalDate date;
+            try {
+                date = java.time.LocalDate.parse(deadline);
+            } catch (Exception e) {
+                // Try parsing with single-digit month/day
+                date = java.time.LocalDate.parse(deadline,
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-M-d"));
+            }
             return ipoService.submitIpo(companyId, symbol, sharesOffered,
                     pricePerShare, description, date);
         } catch (Exception e) { throw remote(e); }
