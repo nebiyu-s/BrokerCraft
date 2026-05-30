@@ -36,6 +36,9 @@ public class BrokerCraftServiceImpl extends UnicastRemoteObject implements Broke
     public BrokerCraftServiceImpl() throws RemoteException {
         super();
         db.initialize();
+        // Auto-start price simulation on server boot
+        priceSimulator.start();
+        System.out.println("Price simulation started automatically.");
     }
 
     /** Expose the simulator so AdminWebServer can share the same instance. */
