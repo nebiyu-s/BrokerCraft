@@ -41,6 +41,9 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
+        // Entry point for the JavaFX client application.
+        // Launches the JavaFX runtime, initializes the UI, and
+        // attempts to connect to the BrokerCraft RMI server.
         launch(args);
     }
 }
