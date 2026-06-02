@@ -6,6 +6,31 @@ Built with **Java 17 · JavaFX 21 · Java RMI · MySQL · Javalin (Web)**
 
 ---
 
+## Quick Start
+
+- **Requirements:** Java 17+, MySQL (or compatible), Gradle wrapper (included)
+
+- Windows (PowerShell):
+
+```powershell
+Copy-Item -Path src\main\resources\db.properties.example -Destination src\main\resources\db.properties
+.\gradlew.bat build
+.\gradlew.bat runServer
+# In a separate terminal, start the JavaFX client:
+.\gradlew.bat run
+```
+
+- Linux / macOS:
+
+```bash
+cp src/main/resources/db.properties.example src/main/resources/db.properties
+./gradlew build
+./gradlew runServer
+# In a separate terminal, start the JavaFX client:
+./gradlew run
+```
+
+
 ## Project Overview
 
 BrokerCraft is a distributed client-server stock brokerage and IPO management platform. It simulates a real-world financial ecosystem where:
